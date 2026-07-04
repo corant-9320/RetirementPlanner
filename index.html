@@ -192,9 +192,14 @@
             <input class="plain" type="number" id="pensionRate" step="0.1" value="4.0" />
           </div>
         </div>
-        <div class="row1"><div class="field"><label>Annual drawdown %</label>
-          <input class="plain" type="number" id="drawdown" step="0.1" value="5.0" />
-        </div></div>
+        <div class="row">
+          <div class="field"><label>Drawdown start (year + quarter)</label>
+            <div class="yq-wrap"><input class="plain" type="number" id="drawdownYear" value="2045" /><select id="drawdownQ"><option value="0">Q1</option><option value="0.25">Q2</option><option value="0.5">Q3</option><option value="0.75">Q4</option></select></div>
+          </div>
+          <div class="field"><label>Annual drawdown %</label>
+            <input class="plain" type="number" id="drawdown" step="0.1" value="5.0" />
+          </div>
+        </div>
       </div>
 
       <!-- Col 2: State Pension You + Spouse -->
@@ -410,6 +415,7 @@ function readParams() {
     pension:          readMoney('pension'),
     pensionRate:      readPlain('pensionRate') / 100,
     drawdown:         readPlain('drawdown') / 100,
+    drawdownStartFY:  readYQ('drawdownYear', 'drawdownQ'),
     spUser:           readMoney('spUser'),
     spUserFY:         readYQ('spUserYear', 'spUserQ'),
     spSpouse:         readMoney('spSpouse'),
@@ -429,10 +435,10 @@ function readParams() {
     ),
     _plainValues: Object.fromEntries(
       ['eurGbp','monthsWork','savingsRate','pensionRate','drawdown','spIncrease',
-       'spUserYear','spSpouseYear','houseSaleYear'].map(id => [id, document.getElementById(id).value])
+       'spUserYear','spSpouseYear','houseSaleYear','drawdownYear'].map(id => [id, document.getElementById(id).value])
     ),
     _selectValues: Object.fromEntries(
-      ['spUserQ','spSpouseQ','houseSaleQ'].map(id => [id, document.getElementById(id).value])
+      ['spUserQ','spSpouseQ','houseSaleQ','drawdownQ'].map(id => [id, document.getElementById(id).value])
     ),
   };
 }
@@ -455,10 +461,27 @@ function simulate(p) {
   for (let yr = START; yr <= END; yr++) {
     const pensionStart = pensionBal;
 
-    // Pension grows then draws (annual)
-    pensionBal += pensionBal * p.pensionRate;
-    const pensionDrawn = pensionBal * p.drawdown;
-    pensionBal -= pensionDrawn;
+    // Pension: growth and drawdown combined
+    // If drawdown hasn't started yet, just grow the balance
+    // Once drawdown starts, apply net rate: growth - drawdown happens simultaneously
+    // This ensures that if return rate = drawdown rate, balance stays constant
+    if (yr + 1 > p.drawdownStartFY) {
+      // Drawdown has started (or starts this year)
+      // Pro-rate drawdown in the start year
+      let netRate = p.pensionRate - p.drawdown;
+      if (yr === Math.floor(p.drawdownStartFY)) {
+        // Partial year: only drawdown from the start quarter onward
+        const fractionDrawing = 1 - (p.drawdownStartFY - Math.floor(p.drawdownStartFY));
+        netRate = p.pensionRate - (p.drawdown * fractionDrawing);
+      }
+      pensionBal = pensionBal * (1 + netRate);
+    } else {
+      // Drawdown hasn't started yet, just growth
+      pensionBal = pensionBal * (1 + p.pensionRate);
+    }
+
+    // Record the income drawn (for display)
+    const pensionDrawn = yr + 1 > p.drawdownStartFY ? Math.max(0, pensionStart * p.drawdown) : 0;
 
     // Salary: pro-rate in the year retirement falls
     let salaryIncome = 0;
