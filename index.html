@@ -38,7 +38,7 @@
     .money-wrap input { flex: 1; padding: 4px 6px; border: 1px solid #ccc; border-right: none; border-radius: 3px 0 0 3px; font-size: 11px; background: #fafafa; min-width: 0; }
     .money-wrap input:focus { outline: none; border-color: #1a6eb5; background: #fff; box-shadow: inset 0 0 0 1px #1a6eb5; }
     .cur-toggle { display: flex; border: 1px solid #ccc; border-radius: 0 3px 3px 0; overflow: hidden; flex-shrink: 0; }
-    .cur-toggle button { padding: 0 5px; font-size: 9px; font-weight: 600; border: none; background: #f0f0f0; color: #888; cursor: pointer; line-height: 1; min-width: 28px; }
+    .cur-toggle button { padding: 0 5px; font-size: 9px; font-weight: 600; border: none; background: #f0f0f0; color: #888; cursor: pointer; line-height: 1; min-width: 24px; }
     .cur-toggle button.active { background: #1a6eb5; color: #fff; }
     .cur-toggle button:first-child { border-right: 1px solid #ccc; }
 
@@ -54,7 +54,7 @@
     input.plain:focus { outline: none; border-color: #1a6eb5; background: #fff; box-shadow: 0 0 0 2px rgba(26,110,181,.12); }
 
     /* ── One-off events ── */
-    .event-row { display: grid; grid-template-columns: 94px 1fr 112px 24px; gap: 4px; margin-bottom: 4px; align-items: center; }
+    .event-row { display: grid; grid-template-columns: 112px 1fr 112px 24px; gap: 4px; margin-bottom: 4px; align-items: center; }
     .btn-sm { background: none; border: 1px solid #ccc; border-radius: 3px; cursor: pointer; font-size: 10px; padding: 3px 6px; color: #555; }
     .btn-sm:hover { background: #f0f0f0; }
     .btn-del { color: #b00; border-color: #f5c6c6; padding: 3px 5px; }
@@ -123,10 +123,10 @@
         <div class="section-title">Mortgage</div>
         <div class="row">
           <div class="field"><label>Remaining</label>
-            <div class="money-wrap"><input type="text" id="mortgageRem" value="150,000" /><div class="cur-toggle" data-id="mortgageRem"><button data-cur="EUR">EUR</button><button class="active" data-cur="GBP">GBP</button></div></div>
+            <div class="money-wrap"><input type="text" id="mortgageRem" value="150,000" /><div class="cur-toggle" data-id="mortgageRem"><button data-cur="EUR">€</button><button class="active" data-cur="GBP">£</button></div></div>
           </div>
           <div class="field"><label>Annual payments</label>
-            <div class="money-wrap"><input type="text" id="mortgagePay" value="15,000" /><div class="cur-toggle" data-id="mortgagePay"><button data-cur="EUR">EUR</button><button class="active" data-cur="GBP">GBP</button></div></div>
+            <div class="money-wrap"><input type="text" id="mortgagePay" value="15,000" /><div class="cur-toggle" data-id="mortgagePay"><button data-cur="EUR">€</button><button class="active" data-cur="GBP">£</button></div></div>
           </div>
         </div>
       </div>
@@ -136,7 +136,7 @@
         <div class="section-title">Income</div>
         <div class="row">
           <div class="field"><label>Net salary / yr</label>
-            <div class="money-wrap"><input type="text" id="salary" value="60,000" /><div class="cur-toggle" data-id="salary"><button class="active" data-cur="EUR">EUR</button><button data-cur="GBP">GBP</button></div></div>
+            <div class="money-wrap"><input type="text" id="salary" value="60,000" /><div class="cur-toggle" data-id="salary"><button class="active" data-cur="EUR">€</button><button data-cur="GBP">£</button></div></div>
           </div>
           <div class="field"><label>Months still working</label>
             <input class="plain" type="number" id="monthsWork" step="1" value="120" />
@@ -152,7 +152,7 @@
             <div class="yq-wrap"><input class="plain" type="number" id="houseSaleYear" value="2045" /><select id="houseSaleQ"><option value="0">Q1</option><option value="0.25">Q2</option><option value="0.5">Q3</option><option value="0.75">Q4</option></select></div>
           </div>
           <div class="field"><label>Proceeds</label>
-            <div class="money-wrap"><input type="text" id="houseSalePrice" value="400,000" /><div class="cur-toggle" data-id="houseSalePrice"><button data-cur="EUR">EUR</button><button class="active" data-cur="GBP">GBP</button></div></div>
+            <div class="money-wrap"><input type="text" id="houseSalePrice" value="400,000" /><div class="cur-toggle" data-id="houseSalePrice"><button data-cur="EUR">€</button><button class="active" data-cur="GBP">£</button></div></div>
           </div>
         </div>
       </div>
@@ -162,14 +162,14 @@
         <div class="section-title">Savings</div>
         <div class="row">
           <div class="field"><label>Current savings</label>
-            <div class="money-wrap"><input type="text" id="savings" value="100,000" /><div class="cur-toggle" data-id="savings"><button data-cur="EUR">EUR</button><button class="active" data-cur="GBP">GBP</button></div></div>
+            <div class="money-wrap"><input type="text" id="savings" value="100,000" /><div class="cur-toggle" data-id="savings"><button data-cur="EUR">€</button><button class="active" data-cur="GBP">£</button></div></div>
           </div>
           <div class="field"><label>Return rate % (real)</label>
             <input class="plain" type="number" id="savingsRate" step="0.1" value="3.0" />
           </div>
         </div>
         <div class="row1"><div class="field"><label>Minimum threshold</label>
-          <div class="money-wrap"><input type="text" id="savingsThreshold" value="20,000" /><div class="cur-toggle" data-id="savingsThreshold"><button data-cur="EUR">EUR</button><button class="active" data-cur="GBP">GBP</button></div></div>
+          <div class="money-wrap"><input type="text" id="savingsThreshold" value="20,000" /><div class="cur-toggle" data-id="savingsThreshold"><button data-cur="EUR">€</button><button class="active" data-cur="GBP">£</button></div></div>
         </div></div>
       </div>
 
@@ -177,7 +177,7 @@
       <div class="section">
         <div class="section-title">Target Annual Expenditure</div>
         <div class="row1"><div class="field"><label>Target spend / yr (excl. mortgage)</label>
-          <div class="money-wrap"><input type="text" id="targetSpend" value="40,000" /><div class="cur-toggle" data-id="targetSpend"><button data-cur="EUR">EUR</button><button class="active" data-cur="GBP">GBP</button></div></div>
+          <div class="money-wrap"><input type="text" id="targetSpend" value="40,000" /><div class="cur-toggle" data-id="targetSpend"><button data-cur="EUR">€</button><button class="active" data-cur="GBP">£</button></div></div>
         </div></div>
       </div>
 
@@ -186,7 +186,7 @@
         <div class="section-title">Private Pension</div>
         <div class="row">
           <div class="field"><label>Current pot</label>
-            <div class="money-wrap"><input type="text" id="pension" value="200,000" /><div class="cur-toggle" data-id="pension"><button data-cur="EUR">EUR</button><button class="active" data-cur="GBP">GBP</button></div></div>
+            <div class="money-wrap"><input type="text" id="pension" value="200,000" /><div class="cur-toggle" data-id="pension"><button data-cur="EUR">€</button><button class="active" data-cur="GBP">£</button></div></div>
           </div>
           <div class="field"><label>Return rate % (real)</label>
             <input class="plain" type="number" id="pensionRate" step="0.1" value="4.0" />
@@ -202,7 +202,7 @@
         <div class="section-title">State Pension — You</div>
         <div class="row">
           <div class="field"><label>Amount / yr</label>
-            <div class="money-wrap"><input type="text" id="spUser" value="11,500" /><div class="cur-toggle" data-id="spUser"><button data-cur="EUR">EUR</button><button class="active" data-cur="GBP">GBP</button></div></div>
+            <div class="money-wrap"><input type="text" id="spUser" value="11,500" /><div class="cur-toggle" data-id="spUser"><button data-cur="EUR">€</button><button class="active" data-cur="GBP">£</button></div></div>
           </div>
           <div class="field"><label>Start (year + quarter)</label>
             <div class="yq-wrap"><input class="plain" type="number" id="spUserYear" value="2041" /><select id="spUserQ"><option value="0">Q1</option><option value="0.25">Q2</option><option value="0.5">Q3</option><option value="0.75">Q4</option></select></div>
@@ -218,7 +218,7 @@
         <div class="section-title">State Pension — Spouse</div>
         <div class="row">
           <div class="field"><label>Amount / yr</label>
-            <div class="money-wrap"><input type="text" id="spSpouse" value="11,500" /><div class="cur-toggle" data-id="spSpouse"><button data-cur="EUR">EUR</button><button class="active" data-cur="GBP">GBP</button></div></div>
+            <div class="money-wrap"><input type="text" id="spSpouse" value="11,500" /><div class="cur-toggle" data-id="spSpouse"><button data-cur="EUR">€</button><button class="active" data-cur="GBP">£</button></div></div>
           </div>
           <div class="field"><label>Start (year + quarter)</label>
             <div class="yq-wrap"><input class="plain" type="number" id="spSpouseYear" value="2043" /><select id="spSpouseQ"><option value="0">Q1</option><option value="0.25">Q2</option><option value="0.5">Q3</option><option value="0.75">Q4</option></select></div>
@@ -372,7 +372,7 @@ function renderEvents() {
     amtInp.addEventListener('blur', () => { ev.amount = parseMoney(amtInp.value); });
     const ctog = document.createElement('div'); ctog.className = 'cur-toggle';
     ['GBP','EUR'].forEach(cur => {
-      const b = document.createElement('button'); b.textContent = cur; b.dataset.cur = cur;
+      const b = document.createElement('button'); b.textContent = cur === 'GBP' ? '£' : '€'; b.dataset.cur = cur;
       if (cur === ev.currency) b.classList.add('active');
       b.addEventListener('click', () => {
         ctog.querySelectorAll('button').forEach(x => x.classList.remove('active'));
