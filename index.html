@@ -14,53 +14,53 @@
     #right { flex: 1; overflow: auto; padding: 16px; }
 
     /* ── Save bar ── */
-    #save-bar { background: #f7f8fa; border-bottom: 1px solid #e0e0e0; padding: 8px 12px; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
-    #save-bar select { flex: 1; min-width: 80px; font-size: 11px; padding: 4px 6px; border: 1px solid #ccc; border-radius: 3px; background: #fff; }
-    #save-bar input[type=text] { flex: 1; min-width: 80px; font-size: 11px; padding: 4px 6px; border: 1px solid #ccc; border-radius: 3px; }
-    .sbar-btn { font-size: 11px; padding: 4px 9px; border: 1px solid #ccc; border-radius: 3px; background: #fff; cursor: pointer; white-space: nowrap; color: #333; }
+    #save-bar { background: #f7f8fa; border-bottom: 1px solid #e0e0e0; padding: 7px 10px; display: flex; gap: 5px; align-items: center; flex-wrap: wrap; }
+    #save-bar select { flex: 1; min-width: 70px; font-size: 10px; padding: 3px 5px; border: 1px solid #ccc; border-radius: 3px; background: #fff; }
+    #save-bar input[type=text] { flex: 1; min-width: 70px; font-size: 10px; padding: 3px 5px; border: 1px solid #ccc; border-radius: 3px; }
+    .sbar-btn { font-size: 10px; padding: 3px 8px; border: 1px solid #ccc; border-radius: 3px; background: #fff; cursor: pointer; white-space: nowrap; color: #333; }
     .sbar-btn:hover { background: #eef2f7; }
     .sbar-btn.primary { background: #1a6eb5; color: #fff; border-color: #1a6eb5; }
     .sbar-btn.primary:hover { background: #155d9a; }
     .sbar-btn.danger { color: #b00; border-color: #f5c0c0; }
     .sbar-btn.danger:hover { background: #fff0f0; }
-    #save-status { font-size: 10px; color: #888; width: 100%; }
+    #save-status { font-size: 9px; color: #888; width: 100%; }
 
-    h1 { font-size: 15px; font-weight: 700; margin-bottom: 14px; color: #1a3a5c; }
-    .section { margin-bottom: 13px; }
-    .section-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .7px; color: #888; margin-bottom: 5px; padding-bottom: 3px; border-bottom: 1px solid #eee; }
-    .row  { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 4px; }
-    .row1 { display: grid; grid-template-columns: 1fr;     gap: 6px; margin-bottom: 4px; }
+    h1 { font-size: 14px; font-weight: 700; margin-bottom: 12px; color: #1a3a5c; }
+    .section { margin-bottom: 11px; }
+    .section-title { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: #888; margin-bottom: 4px; padding-bottom: 2px; border-bottom: 1px solid #eee; }
+    .row  { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 3px; }
+    .row1 { display: grid; grid-template-columns: 1fr;     gap: 6px; margin-bottom: 3px; }
     .field { display: flex; flex-direction: column; gap: 2px; }
-    label { font-size: 10px; color: #666; }
+    label { font-size: 9px; color: #666; }
 
     /* ── Money input ── */
     .money-wrap { display: flex; }
-    .money-wrap input { flex: 1; padding: 5px 7px; border: 1px solid #ccc; border-right: none; border-radius: 3px 0 0 3px; font-size: 12px; background: #fafafa; min-width: 0; }
+    .money-wrap input { flex: 1; padding: 4px 6px; border: 1px solid #ccc; border-right: none; border-radius: 3px 0 0 3px; font-size: 11px; background: #fafafa; min-width: 0; }
     .money-wrap input:focus { outline: none; border-color: #1a6eb5; background: #fff; box-shadow: inset 0 0 0 1px #1a6eb5; }
     .cur-toggle { display: flex; border: 1px solid #ccc; border-radius: 0 3px 3px 0; overflow: hidden; flex-shrink: 0; }
-    .cur-toggle button { padding: 0 6px; font-size: 10px; font-weight: 600; border: none; background: #f0f0f0; color: #888; cursor: pointer; line-height: 1; min-width: 30px; }
+    .cur-toggle button { padding: 0 5px; font-size: 9px; font-weight: 600; border: none; background: #f0f0f0; color: #888; cursor: pointer; line-height: 1; min-width: 28px; }
     .cur-toggle button.active { background: #1a6eb5; color: #fff; }
     .cur-toggle button:first-child { border-right: 1px solid #ccc; }
 
     /* ── Year+Quarter input ── */
     .yq-wrap { display: flex; gap: 0; }
-    .yq-wrap input { width: 58px; padding: 5px 7px; border: 1px solid #ccc; border-right: none; border-radius: 3px 0 0 3px; font-size: 12px; background: #fafafa; }
+    .yq-wrap input { width: 50px; padding: 4px 6px; border: 1px solid #ccc; border-right: none; border-radius: 3px 0 0 3px; font-size: 11px; background: #fafafa; }
     .yq-wrap input:focus { outline: none; border-color: #1a6eb5; background: #fff; }
-    .yq-wrap select { padding: 5px 4px; border: 1px solid #ccc; border-radius: 0 3px 3px 0; font-size: 11px; background: #fafafa; color: #444; cursor: pointer; }
+    .yq-wrap select { padding: 4px 4px; border: 1px solid #ccc; border-radius: 0 3px 3px 0; font-size: 10px; background: #fafafa; color: #444; cursor: pointer; }
     .yq-wrap select:focus { outline: none; border-color: #1a6eb5; }
 
     /* ── Plain inputs ── */
-    input.plain { padding: 5px 7px; border: 1px solid #ccc; border-radius: 3px; font-size: 12px; width: 100%; background: #fafafa; }
+    input.plain { padding: 4px 6px; border: 1px solid #ccc; border-radius: 3px; font-size: 11px; width: 100%; background: #fafafa; }
     input.plain:focus { outline: none; border-color: #1a6eb5; background: #fff; box-shadow: 0 0 0 2px rgba(26,110,181,.12); }
 
     /* ── One-off events ── */
     .event-row { display: grid; grid-template-columns: 94px 1fr 112px 24px; gap: 4px; margin-bottom: 4px; align-items: center; }
-    .btn-sm { background: none; border: 1px solid #ccc; border-radius: 3px; cursor: pointer; font-size: 11px; padding: 3px 7px; color: #555; }
+    .btn-sm { background: none; border: 1px solid #ccc; border-radius: 3px; cursor: pointer; font-size: 10px; padding: 3px 6px; color: #555; }
     .btn-sm:hover { background: #f0f0f0; }
-    .btn-del { color: #b00; border-color: #f5c6c6; padding: 3px 6px; }
+    .btn-del { color: #b00; border-color: #f5c6c6; padding: 3px 5px; }
     .btn-del:hover { background: #fff0f0; }
 
-    #btn-run { width: 100%; padding: 9px; background: #1a6eb5; color: #fff; border: none; border-radius: 4px; font-size: 13px; font-weight: 600; cursor: pointer; margin-top: 10px; }
+    #btn-run { width: 100%; padding: 8px; background: #1a6eb5; color: #fff; border: none; border-radius: 4px; font-size: 12px; font-weight: 600; cursor: pointer; margin-top: 8px; }
     #btn-run:hover { background: #155d9a; }
 
     /* ── KPIs ── */
