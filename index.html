@@ -8,44 +8,52 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 13px; background: #f0f2f5; color: #222; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
     #app { display: flex; flex: 1; overflow: hidden; }
-    #left  { width: 360px; min-width: 300px; background: #fff; border-right: 1px solid #ddd; overflow-y: auto; padding: 16px; flex-shrink: 0; }
+    #left  { width: 370px; min-width: 310px; background: #fff; border-right: 1px solid #ddd; overflow-y: auto; padding: 0; flex-shrink: 0; display: flex; flex-direction: column; }
+    #left-inner { padding: 14px 16px 16px; flex: 1; }
     #right { flex: 1; overflow: auto; padding: 16px; }
 
-    h1 { font-size: 15px; font-weight: 700; margin-bottom: 16px; color: #1a3a5c; }
+    /* ── Save bar ── */
+    #save-bar { background: #f7f8fa; border-bottom: 1px solid #e0e0e0; padding: 8px 12px; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+    #save-bar select { flex: 1; min-width: 80px; font-size: 11px; padding: 4px 6px; border: 1px solid #ccc; border-radius: 3px; background: #fff; }
+    #save-bar input[type=text] { flex: 1; min-width: 80px; font-size: 11px; padding: 4px 6px; border: 1px solid #ccc; border-radius: 3px; }
+    .sbar-btn { font-size: 11px; padding: 4px 9px; border: 1px solid #ccc; border-radius: 3px; background: #fff; cursor: pointer; white-space: nowrap; color: #333; }
+    .sbar-btn:hover { background: #eef2f7; }
+    .sbar-btn.primary { background: #1a6eb5; color: #fff; border-color: #1a6eb5; }
+    .sbar-btn.primary:hover { background: #155d9a; }
+    .sbar-btn.danger { color: #b00; border-color: #f5c0c0; }
+    .sbar-btn.danger:hover { background: #fff0f0; }
+    #save-status { font-size: 10px; color: #888; width: 100%; }
 
-    .section { margin-bottom: 14px; }
-    .section-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .7px; color: #888; margin-bottom: 6px; padding-bottom: 3px; border-bottom: 1px solid #eee; }
+    h1 { font-size: 15px; font-weight: 700; margin-bottom: 14px; color: #1a3a5c; }
+    .section { margin-bottom: 13px; }
+    .section-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .7px; color: #888; margin-bottom: 5px; padding-bottom: 3px; border-bottom: 1px solid #eee; }
     .row  { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 4px; }
     .row1 { display: grid; grid-template-columns: 1fr;     gap: 6px; margin-bottom: 4px; }
     .field { display: flex; flex-direction: column; gap: 2px; }
     label { font-size: 10px; color: #666; }
 
-    /* Money input wrapper: text input + currency toggle */
+    /* ── Money input ── */
     .money-wrap { display: flex; }
-    .money-wrap input {
-      flex: 1; padding: 5px 7px; border: 1px solid #ccc; border-right: none;
-      border-radius: 3px 0 0 3px; font-size: 12px; background: #fafafa; min-width: 0;
-    }
+    .money-wrap input { flex: 1; padding: 5px 7px; border: 1px solid #ccc; border-right: none; border-radius: 3px 0 0 3px; font-size: 12px; background: #fafafa; min-width: 0; }
     .money-wrap input:focus { outline: none; border-color: #1a6eb5; background: #fff; box-shadow: inset 0 0 0 1px #1a6eb5; }
-    .cur-toggle {
-      display: flex; border: 1px solid #ccc; border-radius: 0 3px 3px 0;
-      overflow: hidden; flex-shrink: 0;
-    }
-    .cur-toggle button {
-      padding: 0 6px; font-size: 10px; font-weight: 600; border: none; background: #f0f0f0;
-      color: #888; cursor: pointer; line-height: 1; min-width: 30px;
-    }
+    .cur-toggle { display: flex; border: 1px solid #ccc; border-radius: 0 3px 3px 0; overflow: hidden; flex-shrink: 0; }
+    .cur-toggle button { padding: 0 6px; font-size: 10px; font-weight: 600; border: none; background: #f0f0f0; color: #888; cursor: pointer; line-height: 1; min-width: 30px; }
     .cur-toggle button.active { background: #1a6eb5; color: #fff; }
     .cur-toggle button:first-child { border-right: 1px solid #ccc; }
 
-    /* Plain inputs (rate %, year, months) */
-    input.plain {
-      padding: 5px 7px; border: 1px solid #ccc; border-radius: 3px; font-size: 12px; width: 100%; background: #fafafa;
-    }
+    /* ── Year+Quarter input ── */
+    .yq-wrap { display: flex; gap: 0; }
+    .yq-wrap input { width: 58px; padding: 5px 7px; border: 1px solid #ccc; border-right: none; border-radius: 3px 0 0 3px; font-size: 12px; background: #fafafa; }
+    .yq-wrap input:focus { outline: none; border-color: #1a6eb5; background: #fff; }
+    .yq-wrap select { padding: 5px 4px; border: 1px solid #ccc; border-radius: 0 3px 3px 0; font-size: 11px; background: #fafafa; color: #444; cursor: pointer; }
+    .yq-wrap select:focus { outline: none; border-color: #1a6eb5; }
+
+    /* ── Plain inputs ── */
+    input.plain { padding: 5px 7px; border: 1px solid #ccc; border-radius: 3px; font-size: 12px; width: 100%; background: #fafafa; }
     input.plain:focus { outline: none; border-color: #1a6eb5; background: #fff; box-shadow: 0 0 0 2px rgba(26,110,181,.12); }
 
-    /* One-off events */
-    .event-row { display: grid; grid-template-columns: 58px 1fr 110px 24px; gap: 4px; margin-bottom: 4px; align-items: center; }
+    /* ── One-off events ── */
+    .event-row { display: grid; grid-template-columns: 94px 1fr 112px 24px; gap: 4px; margin-bottom: 4px; align-items: center; }
     .btn-sm { background: none; border: 1px solid #ccc; border-radius: 3px; cursor: pointer; font-size: 11px; padding: 3px 7px; color: #555; }
     .btn-sm:hover { background: #f0f0f0; }
     .btn-del { color: #b00; border-color: #f5c6c6; padding: 3px 6px; }
@@ -54,14 +62,14 @@
     #btn-run { width: 100%; padding: 9px; background: #1a6eb5; color: #fff; border: none; border-radius: 4px; font-size: 13px; font-weight: 600; cursor: pointer; margin-top: 10px; }
     #btn-run:hover { background: #155d9a; }
 
-    /* KPIs */
+    /* ── KPIs ── */
     #summary { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
     .kpi { background: #fff; border: 1px solid #ddd; border-radius: 4px; padding: 10px 14px; min-width: 150px; }
     .kpi-label { font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: .4px; }
     .kpi-value { font-size: 20px; font-weight: 700; margin-top: 3px; color: #1a3a5c; }
     .kpi-value.warn { color: #b52020; }
 
-    /* Table */
+    /* ── Table ── */
     table { border-collapse: collapse; width: 100%; background: #fff; font-size: 12px; border-radius: 4px; overflow: hidden; border: 1px solid #ddd; }
     th { background: #1a3a5c; color: #fff; padding: 8px 10px; text-align: right; font-weight: 600; white-space: nowrap; position: sticky; top: 0; z-index: 1; }
     th:first-child { text-align: left; }
@@ -70,12 +78,11 @@
     tr:hover td { background: #f5f8fc; }
     tr.below td { background: #fffbea; }
     tr.insolvent td { background: #fff0f0; }
-    tr.qrow td { background: #fafafa; color: #666; font-size: 11px; border-bottom: 1px solid #f5f5f5; }
+    tr.qrow td { background: #fafafa; color: #555; font-size: 11px; border-bottom: 1px solid #f5f5f5; }
     tr.qrow td:first-child { padding-left: 26px; font-style: italic; }
     .neg { color: #b52020; font-weight: 600; }
     .expand { cursor: pointer; margin-right: 5px; font-size: 9px; color: #1a6eb5; user-select: none; }
     .placeholder { color: #aaa; text-align: center; padding: 60px 0; font-size: 14px; }
-
     #warnings { margin-bottom: 10px; }
     .warn-box { background: #fff8e1; border-left: 3px solid #f0a500; padding: 5px 10px; margin-bottom: 4px; font-size: 12px; border-radius: 0 3px 3px 0; }
     .err-box  { background: #fff0f0; border-left: 3px solid #c00;    padding: 5px 10px; margin-bottom: 4px; font-size: 12px; border-radius: 0 3px 3px 0; }
@@ -83,9 +90,20 @@
 </head>
 <body>
 <div id="app">
-
   <!-- ═══ LEFT PANEL ═══ -->
   <div id="left">
+
+    <!-- Save bar -->
+    <div id="save-bar">
+      <input type="text" id="save-name" placeholder="Scenario name…" value="Default" />
+      <button class="sbar-btn primary" id="btn-save">💾 Save</button>
+      <select id="save-select"><option value="">— load —</option></select>
+      <button class="sbar-btn" id="btn-load">Load</button>
+      <button class="sbar-btn danger" id="btn-delete">Delete</button>
+      <div id="save-status"></div>
+    </div>
+
+    <div id="left-inner">
     <h1>💷 Retirement Planner</h1>
 
     <div class="section">
@@ -144,8 +162,8 @@
         <div class="field"><label>Amount / yr</label>
           <div class="money-wrap"><input type="text" id="spUser" value="11,500" /><div class="cur-toggle" data-id="spUser"><button data-cur="EUR">EUR</button><button class="active" data-cur="GBP">GBP</button></div></div>
         </div>
-        <div class="field"><label>Start year</label>
-          <input class="plain" type="number" id="spUserYear" step="1" value="2041" />
+        <div class="field"><label>Start (year + quarter)</label>
+          <div class="yq-wrap"><input class="plain" type="number" id="spUserYear" value="2041" /><select id="spUserQ"><option value="0">Q1</option><option value="0.25">Q2</option><option value="0.5">Q3</option><option value="0.75">Q4</option></select></div>
         </div>
       </div>
     </div>
@@ -156,8 +174,8 @@
         <div class="field"><label>Amount / yr</label>
           <div class="money-wrap"><input type="text" id="spSpouse" value="11,500" /><div class="cur-toggle" data-id="spSpouse"><button data-cur="EUR">EUR</button><button class="active" data-cur="GBP">GBP</button></div></div>
         </div>
-        <div class="field"><label>Start year</label>
-          <input class="plain" type="number" id="spSpouseYear" step="1" value="2043" />
+        <div class="field"><label>Start (year + quarter)</label>
+          <div class="yq-wrap"><input class="plain" type="number" id="spSpouseYear" value="2043" /><select id="spSpouseQ"><option value="0">Q1</option><option value="0.25">Q2</option><option value="0.5">Q3</option><option value="0.75">Q4</option></select></div>
         </div>
       </div>
       <div class="row1"><div class="field"><label>Annual increase %</label>
@@ -180,8 +198,8 @@
     <div class="section">
       <div class="section-title">House Sale</div>
       <div class="row">
-        <div class="field"><label>Sale year</label>
-          <input class="plain" type="number" id="houseSaleYear" step="1" value="2045" />
+        <div class="field"><label>Sale (year + quarter)</label>
+          <div class="yq-wrap"><input class="plain" type="number" id="houseSaleYear" value="2045" /><select id="houseSaleQ"><option value="0">Q1</option><option value="0.25">Q2</option><option value="0.5">Q3</option><option value="0.75">Q4</option></select></div>
         </div>
         <div class="field"><label>Proceeds</label>
           <div class="money-wrap"><input type="text" id="houseSalePrice" value="400,000" /><div class="cur-toggle" data-id="houseSalePrice"><button data-cur="EUR">EUR</button><button class="active" data-cur="GBP">GBP</button></div></div>
@@ -203,6 +221,7 @@
     </div>
 
     <button id="btn-run">Run Simulation →</button>
+    </div><!-- /left-inner -->
   </div>
 
   <!-- ═══ RIGHT PANEL ═══ -->
@@ -211,56 +230,43 @@
     <div id="warnings"></div>
     <div id="results"><p class="placeholder">Set your parameters and click <strong>Run Simulation</strong>.</p></div>
   </div>
-
 </div>
 <script>
 'use strict';
 
-// ─── Currency state for each money field ─────
-// Maps field id → 'GBP' | 'EUR'
-const fieldCurrency = {};
-
-// ─── Thousands formatting helpers ────────────
-/** Parse a comma-formatted string to a number */
+// ═══════════════════════════════════════════════
+//  MONEY FORMATTING
+// ═══════════════════════════════════════════════
 function parseMoney(str) {
   return parseFloat(String(str).replace(/,/g, '')) || 0;
 }
-
-/** Format a number with comma thousands separator */
 function formatMoney(n) {
-  if (isNaN(n) || n === '') return '';
-  const rounded = Math.round(Number(n));
-  return rounded.toLocaleString('en-GB');
+  if (n === '' || isNaN(Number(n))) return '';
+  return Math.round(Number(n)).toLocaleString('en-GB');
 }
-
-/** Format on blur, strip commas on focus */
 function attachMoneyFormatting(input) {
   input.addEventListener('focus', () => {
-    input.value = String(parseMoney(input.value) || '');
+    const raw = parseMoney(input.value);
+    input.value = raw === 0 && input.value.trim() === '' ? '' : String(raw);
   });
   input.addEventListener('blur', () => {
     const raw = parseMoney(input.value);
-    if (!isNaN(raw) && input.value !== '') input.value = formatMoney(raw);
+    if (input.value.trim() !== '') input.value = formatMoney(raw);
   });
-  // allow only digits, minus, comma during typing
   input.addEventListener('input', () => {
-    let v = input.value.replace(/[^\d\-]/g, '');
-    input.value = v;
+    input.value = input.value.replace(/[^\d\-]/g, '');
   });
 }
+document.querySelectorAll('.money-wrap input[type=text]').forEach(attachMoneyFormatting);
 
-// Attach formatting to all money text inputs and init currency state
-document.querySelectorAll('.money-wrap input[type=text]').forEach(inp => {
-  attachMoneyFormatting(inp);
-});
-
-// ─── Currency toggle wiring ───────────────────
+// ═══════════════════════════════════════════════
+//  CURRENCY TOGGLES
+// ═══════════════════════════════════════════════
+const fieldCurrency = {};
 document.querySelectorAll('.cur-toggle').forEach(toggle => {
   const id = toggle.dataset.id;
-  // read initial active state
-  const activeBtn = toggle.querySelector('button.active');
-  fieldCurrency[id] = activeBtn ? activeBtn.dataset.cur : 'GBP';
-
+  const active = toggle.querySelector('button.active');
+  fieldCurrency[id] = active ? active.dataset.cur : 'GBP';
   toggle.querySelectorAll('button').forEach(btn => {
     btn.addEventListener('click', () => {
       toggle.querySelectorAll('button').forEach(b => b.classList.remove('active'));
@@ -270,21 +276,39 @@ document.querySelectorAll('.cur-toggle').forEach(toggle => {
   });
 });
 
-// ─── Read a money field → GBP ─────────────────
-function eurGbpRate() {
-  return parseFloat(document.getElementById('eurGbp').value) || 1;
-}
-
+function eurGbpRate() { return parseFloat(document.getElementById('eurGbp').value) || 1; }
 function readMoney(id) {
   const raw = parseMoney(document.getElementById(id).value);
   return fieldCurrency[id] === 'EUR' ? raw * eurGbpRate() : raw;
 }
+function readPlain(id) { return parseFloat(document.getElementById(id).value) || 0; }
 
-function readPlain(id) {
-  return parseFloat(document.getElementById(id).value) || 0;
+// ═══════════════════════════════════════════════
+//  YEAR + QUARTER HELPERS
+//  Returns fractional year: 2041 Q1=2041.0, Q2=2041.25, Q3=2041.5, Q4=2041.75
+// ═══════════════════════════════════════════════
+function readYQ(yearId, qId) {
+  return readPlain(yearId) + parseFloat(document.getElementById(qId).value);
+}
+function setYQ(yearId, qId, fractional) {
+  const year = Math.floor(fractional);
+  const q    = Math.round((fractional - year) * 4) / 4;  // snap to 0/0.25/0.5/0.75
+  document.getElementById(yearId).value = year;
+  const sel = document.getElementById(qId);
+  for (const opt of sel.options) {
+    if (Math.abs(parseFloat(opt.value) - q) < 0.01) { opt.selected = true; break; }
+  }
+}
+// Display label like "2041 Q2"
+function fmtYQ(frac) {
+  const yr = Math.floor(frac);
+  const qi = Math.round((frac - yr) * 4);  // 0-3
+  return `${yr} Q${qi + 1}`;
 }
 
-// ─── One-off events ───────────────────────────
+// ═══════════════════════════════════════════════
+//  ONE-OFF EVENTS
+// ═══════════════════════════════════════════════
 let events = [];
 const expandedYears = new Set();
 let lastResults = null;
@@ -297,73 +321,68 @@ function renderEvents() {
     const row = document.createElement('div');
     row.className = 'event-row';
 
-    // year input
-    const yearInp = document.createElement('input');
-    yearInp.className = 'plain';
-    yearInp.type = 'number';
-    yearInp.value = ev.year;
-    yearInp.placeholder = 'Year';
-    yearInp.addEventListener('change', () => { ev.year = parseInt(yearInp.value) || 0; });
+    // Year + Quarter
+    const yqWrap = document.createElement('div');
+    yqWrap.className = 'yq-wrap';
+    const yrInp = document.createElement('input');
+    yrInp.className = 'plain'; yrInp.type = 'number';
+    yrInp.value = Math.floor(ev.fractYear); yrInp.placeholder = 'Year';
+    const qSel = document.createElement('select');
+    [['Q1','0'],['Q2','0.25'],['Q3','0.5'],['Q4','0.75']].forEach(([label, val]) => {
+      const o = document.createElement('option');
+      o.value = val; o.textContent = label;
+      if (Math.abs(parseFloat(val) - (ev.fractYear - Math.floor(ev.fractYear))) < 0.01) o.selected = true;
+      qSel.appendChild(o);
+    });
+    const updateFract = () => { ev.fractYear = (parseInt(yrInp.value) || 0) + parseFloat(qSel.value); };
+    yrInp.addEventListener('change', updateFract);
+    qSel.addEventListener('change', updateFract);
+    yqWrap.appendChild(yrInp); yqWrap.appendChild(qSel);
 
-    // description input
+    // Description
     const descInp = document.createElement('input');
-    descInp.className = 'plain';
-    descInp.type = 'text';
-    descInp.value = ev.description;
-    descInp.placeholder = 'Description';
+    descInp.className = 'plain'; descInp.type = 'text';
+    descInp.value = ev.description; descInp.placeholder = 'Description';
     descInp.addEventListener('change', () => { ev.description = descInp.value; });
 
-    // amount with currency toggle (inline money-wrap)
-    const wrap = document.createElement('div');
-    wrap.className = 'money-wrap';
-    const amtInp = document.createElement('input');
-    amtInp.type = 'text';
-    amtInp.value = formatMoney(ev.amount);
-    amtInp.placeholder = '±amount';
+    // Amount + currency toggle
+    const wrap = document.createElement('div'); wrap.className = 'money-wrap';
+    const amtInp = document.createElement('input'); amtInp.type = 'text';
+    amtInp.value = formatMoney(ev.amount); amtInp.placeholder = '±amount';
     attachMoneyFormatting(amtInp);
     amtInp.addEventListener('blur', () => { ev.amount = parseMoney(amtInp.value); });
-
-    const ctog = document.createElement('div');
-    ctog.className = 'cur-toggle';
+    const ctog = document.createElement('div'); ctog.className = 'cur-toggle';
     ['GBP','EUR'].forEach(cur => {
-      const b = document.createElement('button');
-      b.textContent = cur;
-      b.dataset.cur = cur;
+      const b = document.createElement('button'); b.textContent = cur; b.dataset.cur = cur;
       if (cur === ev.currency) b.classList.add('active');
       b.addEventListener('click', () => {
         ctog.querySelectorAll('button').forEach(x => x.classList.remove('active'));
-        b.classList.add('active');
-        ev.currency = cur;
+        b.classList.add('active'); ev.currency = cur;
       });
       ctog.appendChild(b);
     });
-    wrap.appendChild(amtInp);
-    wrap.appendChild(ctog);
+    wrap.appendChild(amtInp); wrap.appendChild(ctog);
 
-    // delete button
-    const del = document.createElement('button');
-    del.className = 'btn-sm btn-del';
-    del.textContent = '✕';
+    // Delete
+    const del = document.createElement('button'); del.className = 'btn-sm btn-del'; del.textContent = '✕';
     del.addEventListener('click', () => { events.splice(i, 1); renderEvents(); });
 
-    row.appendChild(yearInp);
-    row.appendChild(descInp);
-    row.appendChild(wrap);
-    row.appendChild(del);
+    row.appendChild(yqWrap); row.appendChild(descInp); row.appendChild(wrap); row.appendChild(del);
     list.appendChild(row);
   });
 }
 
 document.getElementById('btn-add-event').addEventListener('click', () => {
-  events.push({ year: new Date().getFullYear(), amount: 0, description: '', currency: 'GBP' });
+  events.push({ fractYear: new Date().getFullYear(), amount: 0, description: '', currency: 'GBP' });
   renderEvents();
 });
 
-// ─── Read all params ──────────────────────────
+// ═══════════════════════════════════════════════
+//  READ ALL PARAMS
+// ═══════════════════════════════════════════════
 function readParams() {
-  const rate = eurGbpRate();
   return {
-    eurGbp:           rate,
+    eurGbp:           eurGbpRate(),
     salary:           readMoney('salary'),
     monthsWork:       readPlain('monthsWork'),
     savings:          readMoney('savings'),
@@ -373,24 +392,41 @@ function readParams() {
     pensionRate:      readPlain('pensionRate') / 100,
     drawdown:         readPlain('drawdown') / 100,
     spUser:           readMoney('spUser'),
-    spUserYear:       readPlain('spUserYear'),
+    spUserFY:         readYQ('spUserYear', 'spUserQ'),
     spSpouse:         readMoney('spSpouse'),
-    spSpouseYear:     readPlain('spSpouseYear'),
+    spSpouseFY:       readYQ('spSpouseYear', 'spSpouseQ'),
     spIncrease:       readPlain('spIncrease') / 100,
     mortgageRem:      readMoney('mortgageRem'),
     mortgagePay:      readMoney('mortgagePay'),
-    houseSaleYear:    readPlain('houseSaleYear'),
+    houseSaleFY:      readYQ('houseSaleYear', 'houseSaleQ'),
     houseSalePrice:   readMoney('houseSalePrice'),
     targetSpend:      readMoney('targetSpend'),
     events:           events.slice(),
+    // raw currency and value strings for save/restore
+    _fieldCurrency:   Object.assign({}, fieldCurrency),
+    _rawValues: Object.fromEntries(
+      ['salary','savings','savingsThreshold','pension','spUser','spSpouse',
+       'mortgageRem','mortgagePay','houseSalePrice','targetSpend'].map(id => [id, document.getElementById(id).value])
+    ),
+    _plainValues: Object.fromEntries(
+      ['eurGbp','monthsWork','savingsRate','pensionRate','drawdown','spIncrease',
+       'spUserYear','spSpouseYear','houseSaleYear'].map(id => [id, document.getElementById(id).value])
+    ),
+    _selectValues: Object.fromEntries(
+      ['spUserQ','spSpouseQ','houseSaleQ'].map(id => [id, document.getElementById(id).value])
+    ),
   };
 }
 
-// ─── Simulation ───────────────────────────────
+// ═══════════════════════════════════════════════
+//  SIMULATION
+//  All date comparisons use fractional years (e.g. 2041.25 = Q2 2041)
+//  Mortgage stops at house sale quarter
+// ═══════════════════════════════════════════════
 function simulate(p) {
   const START    = new Date().getFullYear();
   const END      = 2050;
-  const retireYr = START + p.monthsWork / 12;
+  const retireFY = START + p.monthsWork / 12;   // fractional retire date
 
   let savingsBal   = p.savings;
   let pensionBal   = p.pension;
@@ -400,42 +436,57 @@ function simulate(p) {
   for (let yr = START; yr <= END; yr++) {
     const pensionStart = pensionBal;
 
-    // Pension grows then draws
+    // Pension grows then draws (annual)
     pensionBal += pensionBal * p.pensionRate;
     const pensionDrawn = pensionBal * p.drawdown;
     pensionBal -= pensionDrawn;
 
-    // Salary (already in GBP via readMoney), pro-rated in final working year
+    // Salary: pro-rate in the year retirement falls
     let salaryIncome = 0;
-    if (yr < retireYr) {
-      const months = (yr + 1 <= retireYr) ? 12 : (retireYr - yr) * 12;
-      salaryIncome = p.salary * Math.min(months, 12) / 12;
+    if (yr < retireFY) {
+      // months worked this calendar year
+      const startOfYr = yr;
+      const endOfYr   = yr + 1;
+      const workTo    = Math.min(retireFY, endOfYr);
+      const fraction  = workTo - startOfYr;   // 0–1
+      salaryIncome    = p.salary * fraction;
     }
 
-    // State pensions
-    const userSP   = yr >= p.spUserYear
-      ? p.spUser   * Math.pow(1 + p.spIncrease, yr - p.spUserYear)   : 0;
-    const spouseSP = yr >= p.spSpouseYear
-      ? p.spSpouse * Math.pow(1 + p.spIncrease, yr - p.spSpouseYear) : 0;
-    const statePensionIncome = userSP + spouseSP;
+    // State pensions — start at their fractional year
+    // Years elapsed is measured from the fractional start date
+    const userSP   = yr + 1 > p.spUserFY
+      ? p.spUser   * Math.pow(1 + p.spIncrease, yr - Math.floor(p.spUserFY))   : 0;
+    const spouseSP = yr + 1 > p.spSpouseFY
+      ? p.spSpouse * Math.pow(1 + p.spIncrease, yr - Math.floor(p.spSpouseFY)) : 0;
+    // Pro-rate in the year they start
+    const userSPAdj   = (yr === Math.floor(p.spUserFY))
+      ? userSP   * (1 - (p.spUserFY   - Math.floor(p.spUserFY)))   : userSP;
+    const spouseSPAdj = (yr === Math.floor(p.spSpouseFY))
+      ? spouseSP * (1 - (p.spSpouseFY - Math.floor(p.spSpouseFY))) : spouseSP;
+    const statePensionIncome = userSPAdj + spouseSPAdj;
 
     // Savings interest on opening balance
     const savingsInterest = savingsBal * p.savingsRate;
 
-    // One-off events (already converted to GBP via currency toggle in readParams)
+    // One-off events — match by fractional year falling in this calendar year
     const oneOff = p.events
-      .filter(e => e.year === yr)
-      .reduce((s, e) => {
-        const gbp = e.currency === 'EUR' ? e.amount * p.eurGbp : e.amount;
-        return s + gbp;
-      }, 0);
+      .filter(e => Math.floor(e.fractYear) === yr)
+      .reduce((s, e) => s + (e.currency === 'EUR' ? e.amount * p.eurGbp : e.amount), 0);
 
-    // House sale
-    const houseSale = (yr === p.houseSaleYear) ? p.houseSalePrice : 0;
+    // House sale — credit proceeds in the sale year; mortgage stops from sale quarter onward
+    const houseSaleYr = Math.floor(p.houseSaleFY);
+    const houseSale   = (yr === houseSaleYr) ? p.houseSalePrice : 0;
 
-    // Mortgage
-    const mortgage = Math.min(mortgageLeft, p.mortgagePay);
-    mortgageLeft   = Math.max(0, mortgageLeft - mortgage);
+    // Mortgage: stop payments from the house sale quarter onward
+    // In the sale year, pro-rate by the fraction of year before sale
+    let mortgage = 0;
+    if (mortgageLeft > 0 && yr < houseSaleYr) {
+      mortgage = Math.min(mortgageLeft, p.mortgagePay);
+    } else if (mortgageLeft > 0 && yr === houseSaleYr) {
+      const fractionBeforeSale = p.houseSaleFY - houseSaleYr;  // 0–0.75
+      mortgage = Math.min(mortgageLeft, p.mortgagePay * fractionBeforeSale);
+    }
+    mortgageLeft = Math.max(0, mortgageLeft - mortgage);
 
     const totalIncome    = salaryIncome + pensionDrawn + statePensionIncome + savingsInterest + oneOff + houseSale;
     const totalOutgoings = p.targetSpend + mortgage;
@@ -451,16 +502,17 @@ function simulate(p) {
   return results;
 }
 
-// ─── Formatters ───────────────────────────────
+// ═══════════════════════════════════════════════
+//  FORMATTERS
+// ═══════════════════════════════════════════════
 function gbp(v) {
-  const abs = Math.abs(Math.round(v));
-  return (v < 0 ? '−' : '') + '£' + abs.toLocaleString('en-GB');
+  return (v < 0 ? '−' : '') + '£' + Math.abs(Math.round(v)).toLocaleString('en-GB');
 }
-function cell(v) {
-  return v < 0 ? `<span class="neg">${gbp(v)}</span>` : gbp(v);
-}
+function cell(v) { return v < 0 ? `<span class="neg">${gbp(v)}</span>` : gbp(v); }
 
-// ─── Render results ───────────────────────────
+// ═══════════════════════════════════════════════
+//  RENDER RESULTS
+// ═══════════════════════════════════════════════
 function renderResults(results, p) {
   lastResults = results;
   lastParams  = p;
@@ -519,14 +571,21 @@ function renderResults(results, p) {
     </tr>`;
 
     if (exp) {
-      ['Q1','Q2','Q3','Q4'].forEach(q => {
+      // Quarterly breakdown: approximate by dividing annual figures by 4
+      ['Q1','Q2','Q3','Q4'].forEach((q, qi) => {
+        const qFrac = r.year + qi * 0.25;
+        // one-offs that fall in this specific quarter
+        const qOneOff = p.events
+          .filter(e => Math.abs(e.fractYear - qFrac) < 0.01)
+          .reduce((s, e) => s + (e.currency === 'EUR' ? e.amount * p.eurGbp : e.amount), 0)
+          + (Math.abs(p.houseSaleFY - qFrac) < 0.01 ? p.houseSalePrice : 0);
         html += `<tr class="qrow">
           <td>${q}</td>
           <td>${r.salaryIncome > 0 ? gbp(r.salaryIncome/4) : '—'}</td>
           <td>${gbp(r.pensionDrawn/4)}</td>
           <td>${r.statePensionIncome > 0 ? gbp(r.statePensionIncome/4) : '—'}</td>
           <td>${gbp(r.savingsInterest/4)}</td>
-          <td>—</td>
+          <td>${qOneOff !== 0 ? gbp(qOneOff) : '—'}</td>
           <td>${gbp(r.totalIncome/4)}</td>
           <td>${r.mortgage > 0 ? gbp(r.mortgage/4) : '—'}</td>
           <td>${gbp(r.targetSpend/4)}</td>
@@ -549,11 +608,126 @@ function renderResults(results, p) {
   });
 }
 
-// ─── Run ─────────────────────────────────────
+// ═══════════════════════════════════════════════
+//  SAVE / LOAD  (localStorage)
+// ═══════════════════════════════════════════════
+const STORAGE_KEY = 'retirementPlanner_saves';
+
+function allSaves() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); }
+  catch { return {}; }
+}
+function persistSaves(saves) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(saves));
+}
+
+function refreshSaveSelect() {
+  const sel = document.getElementById('save-select');
+  const current = sel.value;
+  sel.innerHTML = '<option value="">— load —</option>';
+  const saves = allSaves();
+  Object.keys(saves).sort().forEach(name => {
+    const o = document.createElement('option');
+    o.value = name; o.textContent = name;
+    if (name === current) o.selected = true;
+    sel.appendChild(o);
+  });
+}
+
+function saveScenario() {
+  const name = document.getElementById('save-name').value.trim();
+  if (!name) { setStatus('Enter a scenario name first.', true); return; }
+  const p = readParams();
+  const saves = allSaves();
+  saves[name] = {
+    fieldCurrency: p._fieldCurrency,
+    rawValues:     p._rawValues,
+    plainValues:   p._plainValues,
+    selectValues:  p._selectValues,
+    events:        events,
+    savedAt:       new Date().toISOString(),
+  };
+  persistSaves(saves);
+  refreshSaveSelect();
+  // select the just-saved name in the dropdown
+  document.getElementById('save-select').value = name;
+  setStatus(`Saved "${name}"`);
+}
+
+function loadScenario() {
+  const name = document.getElementById('save-select').value;
+  if (!name) { setStatus('Select a scenario to load.', true); return; }
+  const saves = allSaves();
+  const s = saves[name];
+  if (!s) { setStatus('Scenario not found.', true); return; }
+
+  // Restore plain inputs
+  Object.entries(s.plainValues).forEach(([id, val]) => {
+    const el = document.getElementById(id);
+    if (el) el.value = val;
+  });
+
+  // Restore selects (quarter selectors)
+  Object.entries(s.selectValues).forEach(([id, val]) => {
+    const el = document.getElementById(id);
+    if (el) for (const o of el.options) { if (o.value === val) { o.selected = true; break; } }
+  });
+
+  // Restore money values + currency toggles
+  Object.entries(s.rawValues).forEach(([id, val]) => {
+    const el = document.getElementById(id);
+    if (el) el.value = val;
+  });
+  Object.entries(s.fieldCurrency).forEach(([id, cur]) => {
+    fieldCurrency[id] = cur;
+    const toggle = document.querySelector(`.cur-toggle[data-id="${id}"]`);
+    if (toggle) {
+      toggle.querySelectorAll('button').forEach(b => {
+        b.classList.toggle('active', b.dataset.cur === cur);
+      });
+    }
+  });
+
+  // Restore events
+  events = (s.events || []).map(e => Object.assign({ fractYear: new Date().getFullYear(), amount: 0, description: '', currency: 'GBP' }, e));
+  renderEvents();
+
+  document.getElementById('save-name').value = name;
+  setStatus(`Loaded "${name}"`);
+}
+
+function deleteScenario() {
+  const name = document.getElementById('save-select').value;
+  if (!name) { setStatus('Select a scenario to delete.', true); return; }
+  if (!confirm(`Delete scenario "${name}"?`)) return;
+  const saves = allSaves();
+  delete saves[name];
+  persistSaves(saves);
+  refreshSaveSelect();
+  setStatus(`Deleted "${name}"`);
+}
+
+let statusTimer;
+function setStatus(msg, isError) {
+  const el = document.getElementById('save-status');
+  el.textContent = msg;
+  el.style.color = isError ? '#b00' : '#2a7a2a';
+  clearTimeout(statusTimer);
+  statusTimer = setTimeout(() => { el.textContent = ''; }, 3000);
+}
+
+document.getElementById('btn-save').addEventListener('click', saveScenario);
+document.getElementById('btn-load').addEventListener('click', loadScenario);
+document.getElementById('btn-delete').addEventListener('click', deleteScenario);
+
+// ─── Run button ───────────────────────────────
 document.getElementById('btn-run').addEventListener('click', () => {
   const p = readParams();
   renderResults(simulate(p), p);
 });
+
+// Populate save list on startup
+refreshSaveSelect();
 </script>
 </body>
 </html>
