@@ -1,0 +1,21 @@
+The goal of the retirement planner is to pass in some parameters describing current financial situation and some projections for future changes.  The planner will then model a range of future scenarios in order to predict a range of financial outcomes for each year through to 2050. All numbers are in today's terms.  This means interest rates need to be entered net of inflation. Some values will be in EUR, others in GBP. 
+Input parameters:
+Eur to GBP exchange rate
+Current Net Salary
+Months to continue working
+Current Savings and expected return rate
+Current Private Pensions and expected return rate and drawdown rate
+Current State Pensions amount and start date for user and spouse.  Expected increase per year
+Mortgage Remaining
+Mortgage Payments
+Expected House Sale Date and Price
+A number of One Off events - Amount and date
+A minimum threshold for Savings
+
+Output:
+Yearly Expenditure Budget
+End of year Savings
+
+UI:
+Left hand panel collects the Input parameters
+Right hand contains rows per year (expandable to quarters).   Columns are Income from Pension and Savings interest, Outgoings, Total Outgoings, Pension Remaining at start of year, Savings Remaining
