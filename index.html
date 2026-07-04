@@ -157,12 +157,9 @@
       <!-- Col 2: House Sale -->
       <div class="section">
         <div class="section-title">House Sale</div>
-        <div class="row">
+        <div class="row1">
           <div class="field"><label>Sale (year + quarter)</label>
             <div class="yq-wrap"><input class="plain" type="number" id="houseSaleYear" value="2045" /><select id="houseSaleQ"><option value="0">Q1</option><option value="0.25">Q2</option><option value="0.5">Q3</option><option value="0.75">Q4</option></select></div>
-          </div>
-          <div class="field"><label>Sale price</label>
-            <div class="money-wrap"><input type="text" id="houseSalePrice" value="400,000" /><div class="cur-toggle" data-id="houseSalePrice"><button data-cur="EUR">€</button><button class="active" data-cur="GBP">£</button></div></div>
           </div>
         </div>
       </div>
@@ -478,7 +475,6 @@ function readParams() {
     mortgagePay:      readMoney('mortgagePay'),
     mortgageCapital:  readMoney('mortgageCapital'),
     houseSaleFY:      readYQ('houseSaleYear', 'houseSaleQ'),
-    houseSalePrice:   readMoney('houseSalePrice'),
     rentMonthly:      readMoney('rentMonthly'),
     housePurchaseFY:  readYQ('housePurchaseYear', 'housePurchaseQ'),
     housePurchasePrice: readMoney('housePurchasePrice'),
@@ -488,7 +484,7 @@ function readParams() {
     _fieldCurrency:   Object.assign({}, fieldCurrency),
     _rawValues: Object.fromEntries(
       ['salary','savings','pension','spUser','spUser2','spSpouse',
-       'mortgageRem','mortgagePay','mortgageCapital','houseValue','houseSalePrice','rentMonthly','housePurchasePrice','targetSpend'].map(id => [id, document.getElementById(id).value])
+       'mortgageRem','mortgagePay','mortgageCapital','houseValue','rentMonthly','housePurchasePrice','targetSpend'].map(id => [id, document.getElementById(id).value])
     ),
     _plainValues: Object.fromEntries(
       ['eurGbp','monthsWork','savingsRate','pensionRate','drawdown','spIncrease','houseGrowth',
@@ -580,12 +576,11 @@ function simulate(p) {
     }
 
     // House sale — in the sale quarter, transfer equity to savings (not income)
-    // Net equity = sale proceeds - remaining mortgage at that point
-    // If sale proceeds (houseSalePrice) is specified, use that; otherwise use tracked value
+    // Sale price is the tracked house value (current value + appreciation to sale date)
+    // Net equity = house value at sale - remaining mortgage
     let houseSaleEquity = 0;
     if (Math.abs(fq - p.houseSaleFY) < 0.01 && houseVal > 0) {
-      const salePrice = p.houseSalePrice > 0 ? p.houseSalePrice : houseVal;
-      houseSaleEquity = Math.max(0, salePrice - mortgageLeft);
+      houseSaleEquity = Math.max(0, houseVal - mortgageLeft);
       houseVal = 0;
       mortgageLeft = 0;
     }
@@ -730,7 +725,7 @@ function colCell(key, r, p, isStrong) {
 function colCellQ(key, r, p, qi) {
   const qFrac = r.year + qi * 0.25;
   const qEvents = p.events.filter(e => Math.abs(e.fractYear - qFrac) < 0.01);
-  const qHouseSale = Math.abs(p.houseSaleFY - qFrac) < 0.01 ? p.houseSalePrice : 0;
+  const qHouseSale = Math.abs(p.houseSaleFY - qFrac) < 0.01 ? (r.houseSale || 0) : 0;
   const qOneOff = qEvents.reduce((s, e) => s + (e.currency === 'EUR' ? e.amount * p.eurGbp : e.amount), 0)
                 + qHouseSale;
   switch (key) {
