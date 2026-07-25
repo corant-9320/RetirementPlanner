@@ -3,87 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Retirement Planner</title>
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 13px; background: #f0f2f5; color: #222; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
-    #app { display: flex; flex: 1; overflow: hidden; }
-    #left  { width: 500px; min-width: 420px; background: #fff; border-right: 1px solid #ddd; overflow-y: auto; padding: 0; flex-shrink: 0; display: flex; flex-direction: column; }
-    #left-inner { padding: 14px 20px 20px; flex: 1; }
-    #form-grid { display: contents; }
-    #right { flex: 1; overflow: auto; padding: 16px; }
-
-    /* ── Save bar ── */
-    #save-bar { background: #f7f8fa; border-bottom: 1px solid #e0e0e0; padding: 7px 10px; display: flex; gap: 5px; align-items: center; flex-wrap: wrap; }
-    #save-bar select { flex: 1; min-width: 70px; font-size: 10px; padding: 3px 5px; border: 1px solid #ccc; border-radius: 3px; background: #fff; }
-    #save-bar input[type=text] { flex: 1; min-width: 70px; font-size: 10px; padding: 3px 5px; border: 1px solid #ccc; border-radius: 3px; }
-    .sbar-btn { font-size: 10px; padding: 3px 8px; border: 1px solid #ccc; border-radius: 3px; background: #fff; cursor: pointer; white-space: nowrap; color: #333; }
-    .sbar-btn:hover { background: #eef2f7; }
-    .sbar-btn.primary { background: #1a6eb5; color: #fff; border-color: #1a6eb5; }
-    .sbar-btn.primary:hover { background: #155d9a; }
-    .sbar-btn.danger { color: #b00; border-color: #f5c0c0; }
-    .sbar-btn.danger:hover { background: #fff0f0; }
-    #save-status { font-size: 9px; color: #888; width: 100%; }
-
-    h1 { font-size: 14px; font-weight: 700; margin-bottom: 12px; color: #1a3a5c; }
-    .section { margin-bottom: 11px; }
-    .section-title { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: #888; margin-bottom: 4px; padding-bottom: 2px; border-bottom: 1px solid #eee; }
-    .row  { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 3px; }
-    .row1 { display: grid; grid-template-columns: 1fr;     gap: 6px; margin-bottom: 3px; }
-    .field { display: flex; flex-direction: column; gap: 2px; }
-    label { font-size: 9px; color: #666; }
-
-    /* ── Money input ── */
-    .money-wrap { display: flex; }
-    .money-wrap input { flex: 1; padding: 4px 6px; border: 1px solid #ccc; border-right: none; border-radius: 3px 0 0 3px; font-size: 11px; background: #fafafa; min-width: 0; }
-    .money-wrap input:focus { outline: none; border-color: #1a6eb5; background: #fff; box-shadow: inset 0 0 0 1px #1a6eb5; }
-    .cur-toggle { display: flex; border: 1px solid #ccc; border-radius: 0 3px 3px 0; overflow: hidden; flex-shrink: 0; }
-    .cur-toggle button { padding: 0 5px; font-size: 9px; font-weight: 600; border: none; background: #f0f0f0; color: #888; cursor: pointer; line-height: 1; min-width: 24px; }
-    .cur-toggle button.active { background: #1a6eb5; color: #fff; }
-    .cur-toggle button:first-child { border-right: 1px solid #ccc; }
-
-    /* ── Year+Quarter input ── */
-    .yq-wrap { display: flex; gap: 0; }
-    .yq-wrap input { width: 50px; padding: 4px 6px; border: 1px solid #ccc; border-right: none; border-radius: 3px 0 0 3px; font-size: 11px; background: #fafafa; }
-    .yq-wrap input:focus { outline: none; border-color: #1a6eb5; background: #fff; }
-    .yq-wrap select { padding: 4px 4px; border: 1px solid #ccc; border-radius: 0 3px 3px 0; font-size: 10px; background: #fafafa; color: #444; cursor: pointer; }
-    .yq-wrap select:focus { outline: none; border-color: #1a6eb5; }
-
-    /* ── Plain inputs ── */
-    input.plain { padding: 4px 6px; border: 1px solid #ccc; border-radius: 3px; font-size: 11px; width: 100%; background: #fafafa; }
-    input.plain:focus { outline: none; border-color: #1a6eb5; background: #fff; box-shadow: 0 0 0 2px rgba(26,110,181,.12); }
-
-    /* ── One-off events ── */
-    .event-row { display: grid; grid-template-columns: 112px 1fr 112px 24px; gap: 4px; margin-bottom: 4px; align-items: center; }
-    .btn-sm { background: none; border: 1px solid #ccc; border-radius: 3px; cursor: pointer; font-size: 10px; padding: 3px 6px; color: #555; }
-    .btn-sm:hover { background: #f0f0f0; }
-    .btn-del { color: #b00; border-color: #f5c6c6; padding: 3px 5px; }
-    .btn-del:hover { background: #fff0f0; }
-
-    #btn-run { width: 100%; padding: 8px; background: #1a6eb5; color: #fff; border: none; border-radius: 4px; font-size: 12px; font-weight: 600; cursor: pointer; margin-top: 8px; }
-    #btn-run:hover { background: #155d9a; }
-
-    /* ── Table ── */
-    table { border-collapse: collapse; width: 100%; background: #fff; font-size: 12px; border-radius: 4px; overflow: hidden; border: 1px solid #ddd; }
-    th { background: #1a3a5c; color: #fff; padding: 8px 10px; text-align: right; font-weight: 600; white-space: nowrap; position: sticky; top: 0; z-index: 1; cursor: grab; user-select: none; }
-    th:first-child { text-align: left; cursor: default; }
-    th.drag-over { background: #2a5a8c; outline: 2px dashed #7ab4e8; outline-offset: -2px; }
-    th.dragging  { opacity: 0.4; }
-    td { padding: 6px 10px; text-align: right; border-bottom: 1px solid #f0f0f0; }
-    td:first-child { text-align: left; }
-    tr:hover td { background: #f5f8fc; }
-    tr.below td { background: #fffbea; }
-    tr.insolvent td { background: #fff0f0; }
-    tr.qrow td { background: #fafafa; color: #555; font-size: 11px; border-bottom: 1px solid #f5f5f5; }
-    tr.qrow td:first-child { padding-left: 26px; font-style: italic; }
-    .neg { color: #b52020; font-weight: 600; }
-    .expand { cursor: pointer; margin-right: 5px; font-size: 9px; color: #1a6eb5; user-select: none; }
-    .placeholder { color: #aaa; text-align: center; padding: 60px 0; font-size: 14px; }
-    .has-tip { border-bottom: 1px dotted #888; cursor: help; }
-    #warnings { margin-bottom: 10px; }
-    .warn-box { background: #fff8e1; border-left: 3px solid #f0a500; padding: 5px 10px; margin-bottom: 4px; font-size: 12px; border-radius: 0 3px 3px 0; }
-    .err-box  { background: #fff0f0; border-left: 3px solid #c00;    padding: 5px 10px; margin-bottom: 4px; font-size: 12px; border-radius: 0 3px 3px 0; }
-  </style>
+  <title>Retirement Planner — Protected by IP lock</title>
+  <link rel="stylesheet" href="/src/styles.css" />
 </head>
 <body>
 <div id="app">
@@ -97,6 +18,8 @@
       <select id="save-select"><option value="">— load —</option></select>
       <button class="sbar-btn" id="btn-load">Load</button>
       <button class="sbar-btn danger" id="btn-delete">Delete</button>
+      <button class="sbar-btn" id="btn-undo" title="Undo parameter change (Ctrl+Z)" aria-label="Undo parameter change" disabled>↶ Undo</button>
+      <button class="sbar-btn" id="btn-redo" title="Redo parameter change (Ctrl+Shift+Z)" aria-label="Redo parameter change" disabled>↷ Redo</button>
       <div id="save-status"></div>
     </div>
 
@@ -105,7 +28,7 @@
 
     <div id="form-grid">
 
-      <!-- Col 1: Exchange Rate + Income + Savings -->
+      <!-- Exchange Rate -->
       <div class="section">
         <div class="section-title">Exchange Rate</div>
         <div class="row1"><div class="field">
@@ -114,7 +37,7 @@
         </div></div>
       </div>
 
-      <!-- Col 2: Current Property & Mortgage -->
+      <!-- Current Property & Mortgage -->
       <div class="section">
         <div class="section-title">Current Property</div>
         <div class="row">
@@ -141,7 +64,7 @@
         </div>
       </div>
 
-      <!-- Col 1: Income -->
+      <!-- Income -->
       <div class="section">
         <div class="section-title">Income</div>
         <div class="row">
@@ -154,7 +77,7 @@
         </div>
       </div>
 
-      <!-- Col 2: House Sale -->
+      <!-- House Sale -->
       <div class="section">
         <div class="section-title">House Sale</div>
         <div class="row1">
@@ -164,10 +87,10 @@
         </div>
       </div>
 
-      <!-- Col 1: (empty) -->
+      <!-- spacer -->
       <div></div>
 
-      <!-- Col 2: Rent (between sale and purchase) -->
+      <!-- Rent -->
       <div class="section">
         <div class="section-title">Rent <small style="font-weight:400;text-transform:none;font-size:10px">(sale → purchase period)</small></div>
         <div class="row1"><div class="field"><label>Monthly rent</label>
@@ -175,10 +98,10 @@
         </div></div>
       </div>
 
-      <!-- Col 1: (empty) -->
+      <!-- spacer -->
       <div></div>
 
-      <!-- Col 2: House Purchase -->
+      <!-- House Purchase -->
       <div class="section">
         <div class="section-title">House Purchase</div>
         <div class="row">
@@ -191,7 +114,7 @@
         </div>
       </div>
 
-      <!-- Col 1: Savings -->
+      <!-- Savings -->
       <div class="section">
         <div class="section-title">Savings</div>
         <div class="row">
@@ -202,9 +125,15 @@
             <input class="plain" type="number" id="savingsRate" step="0.1" value="3.0" />
           </div>
         </div>
+        <div class="row">
+          <div class="field"><label>Borrowing rate % (real) <small style="font-weight:400;text-transform:none;font-size:10px">— if balance goes negative</small></label>
+            <input class="plain" type="number" id="borrowRate" step="0.1" value="6.0" />
+          </div>
+          <div class="field"></div>
+        </div>
       </div>
 
-      <!-- Col 2: Target Spend -->
+      <!-- Target Spend -->
       <div class="section">
         <div class="section-title">Target Annual Expenditure</div>
         <div class="row1"><div class="field"><label>Target spend / yr (excl. mortgage)</label>
@@ -212,7 +141,60 @@
         </div></div>
       </div>
 
-      <!-- Col 1: Private Pension -->
+      <!-- Tax -->
+      <div class="section">
+        <div class="section-title">Tax</div>
+        <div class="row">
+          <div class="field"><label>Taxpayers (income split)</label>
+            <input class="plain" type="number" id="taxPayers" step="1" min="1" value="2" />
+          </div>
+          <div class="field"><label>Personal allowance / person</label>
+            <input class="plain" type="number" id="taxAllowance" step="10" value="12570" />
+          </div>
+        </div>
+        <details class="tax-details">
+          <summary>Tax calculation details</summary>
+          <div class="tax-help">
+            <p class="tax-note"><strong>Taxable income</strong> = state pension + the taxable portion of private pension drawdown + savings interest (above the Personal Savings Allowance). Net salary and savings drawdown are excluded.</p>
+            <p class="tax-note">The pension pot is treated as uncrystallised: the tax-free % below is deducted from each drawdown, and only the remainder is taxable.</p>
+            <p class="tax-note"><strong>Who pays.</strong> The private pension and the two "You" state pensions are taxed on person 1 (the older partner, who owns the pot). The spouse's state pension is taxed on person 2. Savings interest is treated as jointly held and split equally. Each person gets their own allowance and bands.</p>
+            <p class="tax-note"><strong>When.</strong> Tax is charged on a cumulative UK tax-year basis (April–March), the same way PAYE works: income accrues across the year and each quarter is charged the movement in the running total. One personal allowance therefore covers the year's actual income, and a quarter can show a refund if an earlier quarter over-collected. Because tax years straddle calendar years, the tax on an annual row will not always match that row's own income.</p>
+            <p class="tax-note">Savings interest stacks on top of pension income and is relieved at 0% by two allowances before any tax is charged: the savings starting-rate band below (reduced £-for-£ by non-savings income above the personal allowance, so it disappears once pension income exceeds allowance + band), then a Personal Savings Allowance of £1,000 (basic rate) / £500 (higher rate) / £0 (additional rate). The personal-allowance taper above £100k is not modelled — this is an estimate only.</p>
+            <div class="row">
+              <div class="field"><label>Basic rate up to</label>
+                <input class="plain" type="number" id="taxBasicLimit" step="10" value="50270" />
+              </div>
+              <div class="field"><label>Higher rate up to</label>
+                <input class="plain" type="number" id="taxHigherLimit" step="10" value="125140" />
+              </div>
+            </div>
+            <div class="row">
+              <div class="field"><label>Basic rate %</label>
+                <input class="plain" type="number" id="taxBasicRate" step="1" value="20" />
+              </div>
+              <div class="field"><label>Higher rate %</label>
+                <input class="plain" type="number" id="taxHigherRate" step="1" value="40" />
+              </div>
+            </div>
+            <div class="row">
+              <div class="field"><label>Additional rate %</label>
+                <input class="plain" type="number" id="taxAddRate" step="1" value="45" />
+              </div>
+              <div class="field"><label>Pension tax-free % / drawdown</label>
+                <input class="plain" type="number" id="pensionTaxFree" step="1" value="25" />
+              </div>
+            </div>
+            <div class="row">
+              <div class="field"><label>Savings starting-rate band</label>
+                <input class="plain" type="number" id="taxSavingsStartBand" step="100" value="5000" />
+              </div>
+              <div class="field"></div>
+            </div>
+          </div>
+        </details>
+      </div>
+
+      <!-- Private Pension -->
       <div class="section">
         <div class="section-title">Private Pension</div>
         <div class="row">
@@ -233,7 +215,7 @@
         </div>
       </div>
 
-      <!-- Col 2: State Pension You + Spouse -->
+      <!-- State Pension — You (1) -->
       <div class="section">
         <div class="section-title">State Pension — You (1)</div>
         <div class="row">
@@ -246,10 +228,10 @@
         </div>
       </div>
 
-      <!-- Col 1: (empty — kept for grid alignment) -->
+      <!-- spacer -->
       <div></div>
 
-      <!-- Col 2: State Pension You (2) -->
+      <!-- State Pension — You (2) -->
       <div class="section">
         <div class="section-title">State Pension — You (2)</div>
         <div class="row">
@@ -262,10 +244,10 @@
         </div>
       </div>
 
-      <!-- Col 1: (empty — kept for grid alignment) -->
+      <!-- spacer -->
       <div></div>
 
-      <!-- Col 2: State Pension Spouse -->
+      <!-- State Pension — Spouse -->
       <div class="section">
         <div class="section-title">State Pension — Spouse</div>
         <div class="row">
@@ -276,12 +258,13 @@
             <div class="yq-wrap"><input class="plain" type="number" id="spSpouseYear" value="2043" /><select id="spSpouseQ"><option value="0">Q1</option><option value="0.25">Q2</option><option value="0.5">Q3</option><option value="0.75">Q4</option></select></div>
           </div>
         </div>
-        <div class="row1"><div class="field"><label>Annual increase %</label>
+        <div class="row1"><div class="field"><label>Annual increase % (real)</label>
           <input class="plain" type="number" id="spIncrease" step="0.1" value="2.0" />
         </div></div>
       </div>
 
-      <!-- Full-width: One-off events + Run button -->
+
+      <!-- One-off events + Run -->
       <div id="form-full">
         <div class="section">
           <div class="section-title">One-off Events &nbsp;<small style="font-weight:400;text-transform:none;font-size:10px">(+ve = receipt, −ve = expense)</small></div>
@@ -302,862 +285,6 @@
     <div id="results"><p class="placeholder">Set your parameters and click <strong>Run Simulation</strong>.</p></div>
   </div>
 </div>
-<script>
-'use strict';
-
-// ═══════════════════════════════════════════════
-//  MONEY FORMATTING
-// ═══════════════════════════════════════════════
-function parseMoney(str) {
-  return parseFloat(String(str).replace(/,/g, '')) || 0;
-}
-function formatMoney(n) {
-  if (n === '' || isNaN(Number(n))) return '';
-  return Math.round(Number(n)).toLocaleString('en-GB');
-}
-function attachMoneyFormatting(input) {
-  input.addEventListener('focus', () => {
-    const raw = parseMoney(input.value);
-    input.value = raw === 0 && input.value.trim() === '' ? '' : String(raw);
-  });
-  input.addEventListener('blur', () => {
-    const raw = parseMoney(input.value);
-    if (input.value.trim() !== '') input.value = formatMoney(raw);
-  });
-  input.addEventListener('input', () => {
-    input.value = input.value.replace(/[^\d\-]/g, '');
-  });
-}
-document.querySelectorAll('.money-wrap input[type=text]').forEach(attachMoneyFormatting);
-
-// ═══════════════════════════════════════════════
-//  CURRENCY TOGGLES
-// ═══════════════════════════════════════════════
-const fieldCurrency = {};
-document.querySelectorAll('.cur-toggle').forEach(toggle => {
-  const id = toggle.dataset.id;
-  const active = toggle.querySelector('button.active');
-  fieldCurrency[id] = active ? active.dataset.cur : 'GBP';
-  toggle.querySelectorAll('button').forEach(btn => {
-    btn.addEventListener('click', () => {
-      toggle.querySelectorAll('button').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      fieldCurrency[id] = btn.dataset.cur;
-    });
-  });
-});
-
-function eurGbpRate() { return parseFloat(document.getElementById('eurGbp').value) || 1; }
-function readMoney(id) {
-  const raw = parseMoney(document.getElementById(id).value);
-  return fieldCurrency[id] === 'EUR' ? raw * eurGbpRate() : raw;
-}
-function readPlain(id) { return parseFloat(document.getElementById(id).value) || 0; }
-
-// ═══════════════════════════════════════════════
-//  YEAR + QUARTER HELPERS
-//  Returns fractional year: 2041 Q1=2041.0, Q2=2041.25, Q3=2041.5, Q4=2041.75
-// ═══════════════════════════════════════════════
-function readYQ(yearId, qId) {
-  return readPlain(yearId) + parseFloat(document.getElementById(qId).value);
-}
-function setYQ(yearId, qId, fractional) {
-  const year = Math.floor(fractional);
-  const q    = Math.round((fractional - year) * 4) / 4;  // snap to 0/0.25/0.5/0.75
-  document.getElementById(yearId).value = year;
-  const sel = document.getElementById(qId);
-  for (const opt of sel.options) {
-    if (Math.abs(parseFloat(opt.value) - q) < 0.01) { opt.selected = true; break; }
-  }
-}
-// Display label like "2041 Q2"
-function fmtYQ(frac) {
-  const yr = Math.floor(frac);
-  const qi = Math.round((frac - yr) * 4);  // 0-3
-  return `${yr} Q${qi + 1}`;
-}
-
-// ═══════════════════════════════════════════════
-//  ONE-OFF EVENTS
-// ═══════════════════════════════════════════════
-let events = [];
-const expandedYears = new Set();
-let lastResults = null;
-let lastParams  = null;
-
-function renderEvents() {
-  const list = document.getElementById('events-list');
-  list.innerHTML = '';
-  events.forEach((ev, i) => {
-    const row = document.createElement('div');
-    row.className = 'event-row';
-
-    // Year + Quarter
-    const yqWrap = document.createElement('div');
-    yqWrap.className = 'yq-wrap';
-    const yrInp = document.createElement('input');
-    yrInp.className = 'plain'; yrInp.type = 'number';
-    yrInp.value = Math.floor(ev.fractYear); yrInp.placeholder = 'Year';
-    const qSel = document.createElement('select');
-    [['Q1','0'],['Q2','0.25'],['Q3','0.5'],['Q4','0.75']].forEach(([label, val]) => {
-      const o = document.createElement('option');
-      o.value = val; o.textContent = label;
-      if (Math.abs(parseFloat(val) - (ev.fractYear - Math.floor(ev.fractYear))) < 0.01) o.selected = true;
-      qSel.appendChild(o);
-    });
-    const updateFract = () => { ev.fractYear = (parseInt(yrInp.value) || 0) + parseFloat(qSel.value); };
-    yrInp.addEventListener('change', updateFract);
-    qSel.addEventListener('change', updateFract);
-    yqWrap.appendChild(yrInp); yqWrap.appendChild(qSel);
-
-    // Description
-    const descInp = document.createElement('input');
-    descInp.className = 'plain'; descInp.type = 'text';
-    descInp.value = ev.description; descInp.placeholder = 'Description';
-    descInp.addEventListener('change', () => { ev.description = descInp.value; });
-
-    // Amount + currency toggle
-    const wrap = document.createElement('div'); wrap.className = 'money-wrap';
-    const amtInp = document.createElement('input'); amtInp.type = 'text';
-    amtInp.value = formatMoney(ev.amount); amtInp.placeholder = '±amount';
-    attachMoneyFormatting(amtInp);
-    amtInp.addEventListener('blur', () => { ev.amount = parseMoney(amtInp.value); });
-    const ctog = document.createElement('div'); ctog.className = 'cur-toggle';
-    ['GBP','EUR'].forEach(cur => {
-      const b = document.createElement('button'); b.textContent = cur === 'GBP' ? '£' : '€'; b.dataset.cur = cur;
-      if (cur === ev.currency) b.classList.add('active');
-      b.addEventListener('click', () => {
-        ctog.querySelectorAll('button').forEach(x => x.classList.remove('active'));
-        b.classList.add('active'); ev.currency = cur;
-      });
-      ctog.appendChild(b);
-    });
-    wrap.appendChild(amtInp); wrap.appendChild(ctog);
-
-    // Delete
-    const del = document.createElement('button'); del.className = 'btn-sm btn-del'; del.textContent = '✕';
-    del.addEventListener('click', () => { events.splice(i, 1); renderEvents(); });
-
-    row.appendChild(yqWrap); row.appendChild(descInp); row.appendChild(wrap); row.appendChild(del);
-    list.appendChild(row);
-  });
-}
-
-document.getElementById('btn-add-event').addEventListener('click', () => {
-  events.push({ fractYear: currentFractYear(), amount: 0, description: '', currency: 'GBP' });
-  renderEvents();
-});
-
-// ═══════════════════════════════════════════════
-//  READ ALL PARAMS
-// ═══════════════════════════════════════════════
-function readParams() {
-  return {
-    eurGbp:           eurGbpRate(),
-    salary:           readMoney('salary'),
-    monthsWork:       readPlain('monthsWork'),
-    savings:          readMoney('savings'),
-    savingsRate:      readPlain('savingsRate') / 100,
-    pension:          readMoney('pension'),
-    pensionRate:      readPlain('pensionRate') / 100,
-    drawdown:         readPlain('drawdown') / 100,
-    drawdownStartFY:  readYQ('drawdownYear', 'drawdownQ'),
-    spUser:           readMoney('spUser'),
-    spUserFY:         readYQ('spUserYear', 'spUserQ'),
-    spUser2:          readMoney('spUser2'),
-    spUser2FY:        readYQ('spUser2Year', 'spUser2Q'),
-    spSpouse:         readMoney('spSpouse'),
-    spSpouseFY:       readYQ('spSpouseYear', 'spSpouseQ'),
-    spIncrease:       readPlain('spIncrease') / 100,
-    houseValue:       readMoney('houseValue'),
-    houseGrowth:      readPlain('houseGrowth') / 100,
-    mortgageRem:      readMoney('mortgageRem'),
-    mortgagePay:      readMoney('mortgagePay'),
-    mortgageCapital:  readMoney('mortgageCapital'),
-    houseSaleFY:      readYQ('houseSaleYear', 'houseSaleQ'),
-    rentMonthly:      readMoney('rentMonthly'),
-    housePurchaseFY:  readYQ('housePurchaseYear', 'housePurchaseQ'),
-    housePurchasePrice: readMoney('housePurchasePrice'),
-    targetSpend:      readMoney('targetSpend'),
-    events:           events.slice(),
-    // raw currency and value strings for save/restore
-    _fieldCurrency:   Object.assign({}, fieldCurrency),
-    _rawValues: Object.fromEntries(
-      ['salary','savings','pension','spUser','spUser2','spSpouse',
-       'mortgageRem','mortgagePay','mortgageCapital','houseValue','rentMonthly','housePurchasePrice','targetSpend'].map(id => [id, document.getElementById(id).value])
-    ),
-    _plainValues: Object.fromEntries(
-      ['eurGbp','monthsWork','savingsRate','pensionRate','drawdown','spIncrease','houseGrowth',
-       'spUserYear','spUser2Year','spSpouseYear','houseSaleYear','housePurchaseYear','drawdownYear'].map(id => [id, document.getElementById(id).value])
-    ),
-    _selectValues: Object.fromEntries(
-      ['spUserQ','spUser2Q','spSpouseQ','houseSaleQ','housePurchaseQ','drawdownQ'].map(id => [id, document.getElementById(id).value])
-    ),
-  };
-}
-
-// ═══════════════════════════════════════════════
-//  SIMULATION — QUARTERLY MODEL
-//  Each result entry is one quarter (fractional year: 2026.0, 2026.25, …)
-//  All rates are annual; they're divided by 4 for per-quarter application.
-// ═══════════════════════════════════════════════
-function currentFractYear() {
-  const now = new Date();
-  const yr  = now.getFullYear();
-  const q   = Math.floor(now.getMonth() / 3);
-  return yr + q * 0.25;
-}
-
-function simulate(p) {
-  const START_FY = currentFractYear();
-  const END_FY   = 2050.75;   // through Q4 2050
-  const retireFY = START_FY + p.monthsWork / 12;
-
-  let savingsBal   = p.savings;
-  let pensionBal   = p.pension;
-  let mortgageLeft = p.mortgageRem;
-  let houseVal     = p.houseValue;
-  const results    = [];
-
-  // State pension amounts at start of payments (compounded from today's value)
-  const spUserAtStart   = p.spUser   * Math.pow(1 + p.spIncrease, p.spUserFY   - START_FY);
-  const spUser2AtStart  = p.spUser2  * Math.pow(1 + p.spIncrease, p.spUser2FY  - START_FY);
-  const spSpouseAtStart = p.spSpouse * Math.pow(1 + p.spIncrease, p.spSpouseFY - START_FY);
-
-  for (let fq = START_FY; fq <= END_FY + 0.001; fq += 0.25) {
-    fq = Math.round(fq * 4) / 4;  // avoid floating point drift
-    const qRate = 0.25;  // fraction of a year per step
-
-    const pensionStart = pensionBal;
-
-    // Pension growth (quarterly)
-    const qPensionGrowth = p.pensionRate / 4;
-    // Drawdown: applies from drawdownStartFY onward
-    let pensionDrawn = 0;
-    if (fq >= p.drawdownStartFY) {
-      pensionDrawn = pensionBal * (p.drawdown / 4);
-      pensionBal   = pensionBal * (1 + qPensionGrowth) - pensionDrawn;
-    } else {
-      pensionBal = pensionBal * (1 + qPensionGrowth);
-    }
-
-    // Salary: full quarterly amount if still working
-    let salaryIncome = 0;
-    if (fq < retireFY) {
-      // In the quarter that retirement falls, pro-rate
-      const qEnd = fq + 0.25;
-      const workEnd = Math.min(retireFY, qEnd);
-      const fraction = (workEnd - fq) / 0.25;
-      salaryIncome = (p.salary / 4) * fraction;
-    }
-
-    // State pensions — quarterly payment if past start date
-    // Grows annually from start date at spIncrease
-    function stateP(atStart, startFY) {
-      if (fq < startFY || atStart === 0) return 0;
-      const yearsElapsed = fq - startFY;
-      return (atStart * Math.pow(1 + p.spIncrease, yearsElapsed)) / 4;
-    }
-    const statePensionIncome = stateP(spUserAtStart, p.spUserFY)
-                             + stateP(spUser2AtStart, p.spUser2FY)
-                             + stateP(spSpouseAtStart, p.spSpouseFY);
-
-    // Savings interest (quarterly on opening balance)
-    const savingsInterest = savingsBal * (p.savingsRate / 4);
-
-    // One-off events in this exact quarter
-    const oneOff = p.events
-      .filter(e => Math.abs(e.fractYear - fq) < 0.01)
-      .reduce((s, e) => s + (e.currency === 'EUR' ? e.amount * p.eurGbp : e.amount), 0);
-
-    // House value appreciation (quarterly, before sale)
-    if (houseVal > 0 && fq < p.houseSaleFY) {
-      houseVal = houseVal * (1 + p.houseGrowth / 4);
-    }
-
-    // House sale — in the sale quarter, transfer equity to savings (not income)
-    // Sale price is the tracked house value (current value + appreciation to sale date)
-    // Net equity = house value at sale - remaining mortgage
-    let houseSaleEquity = 0;
-    if (Math.abs(fq - p.houseSaleFY) < 0.01 && houseVal > 0) {
-      houseSaleEquity = Math.max(0, houseVal - mortgageLeft);
-      houseVal = 0;
-      mortgageLeft = 0;
-    }
-
-    // Mortgage — quarterly payment up to sale quarter
-    let mortgage = 0;
-    if (mortgageLeft > 0 && fq < p.houseSaleFY) {
-      mortgage = Math.min(mortgageLeft, p.mortgagePay / 4);
-      // Only the capital portion reduces the mortgage balance
-      const capitalPortion = Math.min(mortgageLeft, p.mortgageCapital / 4);
-      mortgageLeft = Math.max(0, mortgageLeft - capitalPortion);
-    }
-
-    // Rent — during the sale-to-purchase period
-    let rent = 0;
-    if (p.rentMonthly > 0 && fq >= p.houseSaleFY && fq < p.housePurchaseFY) {
-      rent = p.rentMonthly * 3;  // 3 months per quarter
-    }
-
-    // House purchase — lump sum in purchase quarter
-    const housePurchase = (p.housePurchasePrice > 0 && Math.abs(fq - p.housePurchaseFY) < 0.01)
-      ? p.housePurchasePrice : 0;
-
-    // After purchase, track new house value (for chart equity display)
-    if (p.housePurchasePrice > 0 && Math.abs(fq - p.housePurchaseFY) < 0.01) {
-      houseVal = p.housePurchasePrice;
-    }
-
-    const targetSpend = p.targetSpend / 4;
-    // House sale equity is a transfer, not income — added directly to savings
-    const totalIncome    = salaryIncome + pensionDrawn + statePensionIncome + savingsInterest + oneOff;
-    const totalOutgoings = targetSpend + mortgage + rent + housePurchase;
-
-    savingsBal = savingsBal + totalIncome - totalOutgoings + houseSaleEquity;
-
-    results.push({
-      fq, year: Math.floor(fq), quarter: Math.round((fq - Math.floor(fq)) * 4),
-      salaryIncome, pensionDrawn, statePensionIncome,
-      savingsInterest, oneOff, houseSale: houseSaleEquity, totalIncome,
-      mortgage, rent, housePurchase, targetSpend, totalOutgoings,
-      pensionStart, pensionEnd: pensionBal, savingsEnd: savingsBal,
-      houseVal, mortgageLeft
-    });
-  }
-  return results;
-}
-
-// ═══════════════════════════════════════════════
-//  FORMATTERS
-// ═══════════════════════════════════════════════
-function gbp(v) {
-  return (v < 0 ? '−' : '') + '£' + Math.abs(Math.round(v)).toLocaleString('en-GB');
-}
-function cell(v) { return v < 0 ? `<span class="neg">${gbp(v)}</span>` : gbp(v); }
-
-// ═══════════════════════════════════════════════
-//  COLUMN ORDER  (drag-and-drop reordering)
-// ═══════════════════════════════════════════════
-// Each column is described by a key; 'year' is always first and not draggable.
-const ALL_COLUMNS = [
-  { key: 'year',            label: 'Year',                  draggable: false },
-  { key: 'salaryIncome',    label: 'Salary',                draggable: true  },
-  { key: 'pensionDrawn',    label: 'Pension Income',        draggable: true  },
-  { key: 'statePension',    label: 'State Pension',         draggable: true  },
-  { key: 'savingsInterest', label: 'Savings Interest',      draggable: true  },
-  { key: 'oneOff',          label: 'One-offs / Sale',       draggable: true  },
-  { key: 'totalIncome',     label: 'Total Income',          draggable: true  },
-  { key: 'mortgage',        label: 'Mortgage',              draggable: true  },
-  { key: 'rent',            label: 'Rent',                  draggable: true  },
-  { key: 'housePurchase',   label: 'House Purchase',        draggable: true  },
-  { key: 'livingSpend',     label: 'Living Spend',          draggable: true  },
-  { key: 'totalOutgoings',  label: 'Total Outgoings',       draggable: true  },
-  { key: 'pensionPot',      label: 'Pension Pot (yr start)', draggable: true },
-  { key: 'savingsEnd',      label: 'Savings (yr end)',      draggable: true  },
-];
-
-const COL_ORDER_KEY = 'retirementPlanner_colOrder';
-function loadColOrder() {
-  try {
-    const saved = JSON.parse(localStorage.getItem(COL_ORDER_KEY));
-    if (Array.isArray(saved) && saved.length === ALL_COLUMNS.length) return saved;
-  } catch {}
-  return ALL_COLUMNS.map(c => c.key);
-}
-function saveColOrder(order) {
-  localStorage.setItem(COL_ORDER_KEY, JSON.stringify(order));
-}
-
-let colOrder = loadColOrder();
-
-// Returns ordered array of column descriptors
-function orderedCols() {
-  return colOrder.map(key => ALL_COLUMNS.find(c => c.key === key)).filter(Boolean);
-}
-
-// Cell value for a column key given a row result object + params
-// Build a breakdown tooltip string for the oneOff cell
-function oneOffTooltip(eventsInYear, houseSaleAmt, p) {
-  const lines = [];
-  eventsInYear.forEach(e => {
-    const amt = e.currency === 'EUR' ? e.amount * p.eurGbp : e.amount;
-    const label = e.description ? e.description : '(no description)';
-    lines.push(`${label}: ${gbp(amt)}`);
-  });
-  if (houseSaleAmt) lines.push(`House sale (equity → cash): ${gbp(houseSaleAmt)}`);
-  return lines.join('\n');
-}
-
-function colCell(key, r, p, isStrong) {
-  const oneOff = r.oneOff + r.houseSale;
-  const wrap = (v) => isStrong ? `<strong>${v}</strong>` : v;
-  switch (key) {
-    case 'year':            return null; // handled separately
-    case 'salaryIncome':    return r.salaryIncome > 0 ? wrap(cell(r.salaryIncome)) : '—';
-    case 'pensionDrawn':    return wrap(cell(r.pensionDrawn));
-    case 'statePension':    return r.statePensionIncome > 0 ? wrap(cell(r.statePensionIncome)) : '—';
-    case 'savingsInterest': return wrap(cell(r.savingsInterest));
-    case 'oneOff': {
-      if (oneOff === 0) return '—';
-      // For annual rows (aggregated), match all events in that year
-      // For quarterly rows, match events in that quarter
-      const matchEvents = r.fq !== undefined
-        ? p.events.filter(e => Math.abs(e.fractYear - r.fq) < 0.01)
-        : p.events.filter(e => Math.floor(e.fractYear) === r.year);
-      const tip = oneOffTooltip(matchEvents, r.houseSale, p);
-      const display = wrap(cell(oneOff));
-      return tip ? `<span class="has-tip" title="${tip.replace(/"/g, '&quot;')}">${display}</span>` : display;
-    }
-    case 'totalIncome':     return `<strong>${cell(r.totalIncome)}</strong>`;
-    case 'mortgage':        return r.mortgage > 0 ? wrap(cell(r.mortgage)) : '—';
-    case 'rent':            return r.rent > 0 ? wrap(cell(r.rent)) : '—';
-    case 'housePurchase':   return r.housePurchase > 0 ? wrap(cell(r.housePurchase)) : '—';
-    case 'livingSpend':     return wrap(cell(r.targetSpend));
-    case 'totalOutgoings':  return `<strong>${cell(r.totalOutgoings)}</strong>`;
-    case 'pensionPot':      return wrap(cell(r.pensionStart));
-    case 'savingsEnd':      return `<strong>${cell(r.savingsEnd)}</strong>`;
-    default:                return '—';
-  }
-}
-
-// Quarter cell value
-function colCellQ(key, r, p, qi) {
-  const qFrac = r.year + qi * 0.25;
-  const qEvents = p.events.filter(e => Math.abs(e.fractYear - qFrac) < 0.01);
-  const qHouseSale = Math.abs(p.houseSaleFY - qFrac) < 0.01 ? (r.houseSale || 0) : 0;
-  const qOneOff = qEvents.reduce((s, e) => s + (e.currency === 'EUR' ? e.amount * p.eurGbp : e.amount), 0)
-                + qHouseSale;
-  switch (key) {
-    case 'year':            return null;
-    case 'salaryIncome':    return r.salaryIncome > 0 ? gbp(r.salaryIncome/4) : '—';
-    case 'pensionDrawn':    return gbp(r.pensionDrawn/4);
-    case 'statePension':    return r.statePensionIncome > 0 ? gbp(r.statePensionIncome/4) : '—';
-    case 'savingsInterest': return gbp(r.savingsInterest/4);
-    case 'oneOff': {
-      if (qOneOff === 0) return '—';
-      const tip = oneOffTooltip(qEvents, qHouseSale, p);
-      const display = gbp(qOneOff);
-      return tip ? `<span class="has-tip" title="${tip.replace(/"/g, '&quot;')}">${display}</span>` : display;
-    }
-    case 'totalIncome':     return gbp(r.totalIncome/4);
-    case 'mortgage':        return r.mortgage > 0 ? gbp(r.mortgage/4) : '—';
-    case 'rent':            return r.rent > 0 ? gbp(r.rent/4) : '—';
-    case 'housePurchase':   return r.housePurchase > 0 ? gbp(r.housePurchase) : '—';
-    case 'livingSpend':     return gbp(r.targetSpend/4);
-    case 'totalOutgoings':  return gbp(r.totalOutgoings/4);
-    case 'pensionPot':      return '—';
-    case 'savingsEnd':      return '—';
-    default:                return '—';
-  }
-}
-
-// ═══════════════════════════════════════════════
-//  STACKED AREA CHART  (savings / pension / housing)
-// ═══════════════════════════════════════════════
-function drawChart(results, p) {
-  const canvas = document.getElementById('nw-chart');
-  canvas.style.display = 'block';
-
-  // Sharp on HiDPI
-  const dpr  = window.devicePixelRatio || 1;
-  const cssW = canvas.clientWidth  || canvas.offsetWidth  || 800;
-  const cssH = canvas.clientHeight || canvas.offsetHeight || 280;
-  canvas.width  = cssW * dpr;
-  canvas.height = cssH * dpr;
-  const ctx = canvas.getContext('2d');
-  ctx.scale(dpr, dpr);
-
-  const W = cssW, H = cssH;
-  const PAD = { top: 28, right: 20, bottom: 36, left: 76 };
-  const plotW = W - PAD.left - PAD.right;
-  const plotH = H - PAD.top  - PAD.bottom;
-
-  // ── Build three component series ─────────
-  const sSavings = [], sPension = [], sHousing = [];
-
-  results.forEach(r => {
-    sSavings.push(r.savingsEnd);
-    sPension.push(r.pensionEnd);
-    // House equity = house value - remaining mortgage (tracked in simulation)
-    const homeEquity = Math.max(0, (r.houseVal || 0) - (r.mortgageLeft || 0));
-    sHousing.push(homeEquity);
-  });
-
-  // Stacked boundaries:
-  //   floor  = 0 (or minVal if savings goes negative)
-  //   sBot   = savings          (bottom band top edge)
-  //   sMid   = savings+pension  (middle band top edge)
-  //   sTop   = savings+pension+housing  (upper band top edge)
-  const n    = results.length;
-  const sBot = sSavings;
-  const sMid = results.map((_, i) => sSavings[i] + sPension[i]);
-  const sTop = results.map((_, i) => sSavings[i] + sPension[i] + sHousing[i]);
-
-  const allVals = [...sBot, ...sMid, ...sTop];
-  const minVal  = Math.min(0, ...allVals);
-  const maxVal  = Math.max(1, ...allVals);
-  const range   = maxVal - minVal;
-
-  const xOf = i => PAD.left + (i / (n - 1)) * plotW;
-  const yOf = v => PAD.top  + plotH - ((v - minVal) / range) * plotH;
-
-  // ── Background ───────────────────────────
-  ctx.fillStyle = '#fff';
-  ctx.fillRect(0, 0, W, H);
-
-  // ── Filled bands (bottom-to-top) ─────────
-  // Each band fills between the lower stacked line and the upper stacked line.
-  function fillBand(lower, upper, color) {
-    ctx.fillStyle = color;
-    ctx.beginPath();
-    ctx.moveTo(xOf(0), yOf(lower[0]));
-    for (let i = 1; i < n; i++) ctx.lineTo(xOf(i), yOf(lower[i]));
-    for (let i = n - 1; i >= 0; i--) ctx.lineTo(xOf(i), yOf(upper[i]));
-    ctx.closePath();
-    ctx.fill();
-  }
-
-  const sFloor = results.map(() => minVal);
-  fillBand(sFloor, sBot, 'rgba(26,110,181,0.50)');   // savings  — blue
-  fillBand(sBot,   sMid, 'rgba(42,180,140,0.55)');   // pension  — teal
-  fillBand(sMid,   sTop, 'rgba(230,160, 40,0.55)');  // housing  — amber
-
-  // ── Boundary lines ───────────────────────
-  function drawLine(series, color) {
-    ctx.strokeStyle = color;
-    ctx.lineWidth   = 1.5;
-    ctx.setLineDash([]);
-    ctx.beginPath();
-    series.forEach((v, i) => i === 0 ? ctx.moveTo(xOf(i), yOf(v)) : ctx.lineTo(xOf(i), yOf(v)));
-    ctx.stroke();
-  }
-  drawLine(sBot, 'rgba( 26,110,181,0.9)');
-  drawLine(sMid, 'rgba( 42,180,140,0.9)');
-  drawLine(sTop, 'rgba(200,140, 30,0.9)');
-
-  // ── Zero line ────────────────────────────
-  if (minVal < 0) {
-    const y0 = yOf(0);
-    ctx.strokeStyle = '#bbb';
-    ctx.lineWidth   = 1;
-    ctx.setLineDash([4, 3]);
-    ctx.beginPath(); ctx.moveTo(PAD.left, y0); ctx.lineTo(PAD.left + plotW, y0); ctx.stroke();
-    ctx.setLineDash([]);
-  }
-
-  // ── Grid & Y-axis labels ─────────────────
-  ctx.font      = '10px Segoe UI, Arial, sans-serif';
-  ctx.textAlign = 'right';
-  for (let i = 0; i <= 5; i++) {
-    const v = minVal + (range / 5) * i;
-    const y = yOf(v);
-    ctx.strokeStyle = '#efefef';
-    ctx.lineWidth   = 1;
-    ctx.setLineDash([]);
-    ctx.beginPath(); ctx.moveTo(PAD.left, y); ctx.lineTo(PAD.left + plotW, y); ctx.stroke();
-    const abs = Math.abs(v);
-    const lbl = abs >= 1e6 ? (v / 1e6).toFixed(1) + 'm' : (v / 1e3).toFixed(0) + 'k';
-    ctx.fillStyle = '#888';
-    ctx.fillText('£' + lbl, PAD.left - 6, y + 3);
-  }
-
-  // ── X-axis year labels ───────────────────
-  ctx.textAlign = 'center';
-  ctx.fillStyle = '#888';
-  results.forEach((r, i) => {
-    // Only label at Q1 of each year; every 5 years for dense charts
-    if (r.quarter === 0 && r.year % 5 === 0) {
-      ctx.fillText(r.year, xOf(i), H - PAD.bottom + 14);
-    }
-  });
-
-  // ── Legend ───────────────────────────────
-  const items = [
-    { label: 'Savings', fill: 'rgba(26,110,181,0.50)' },
-    { label: 'Pension', fill: 'rgba(42,180,140,0.55)' },
-    { label: 'Housing', fill: 'rgba(230,160, 40,0.55)' },
-  ];
-  ctx.font = '10px Segoe UI, Arial, sans-serif';
-  ctx.textAlign = 'left';
-  let legX = PAD.left + 10;
-  items.forEach(item => {
-    ctx.fillStyle   = item.fill;
-    ctx.fillRect(legX, PAD.top + 8, 12, 10);
-    ctx.strokeStyle = '#0005';
-    ctx.lineWidth   = 0.5;
-    ctx.strokeRect(legX, PAD.top + 8, 12, 10);
-    ctx.fillStyle = '#444';
-    ctx.fillText(item.label, legX + 16, PAD.top + 17);
-    legX += ctx.measureText(item.label).width + 38;
-  });
-}
-
-// ═══════════════════════════════════════════════
-//  RENDER RESULTS
-// ═══════════════════════════════════════════════
-function renderResults(results, p) {
-  lastResults = results;
-  lastParams  = p;
-
-  // ── Aggregate quarterly results into annual summaries ──
-  const yearMap = {};
-  results.forEach(r => {
-    if (!yearMap[r.year]) yearMap[r.year] = [];
-    yearMap[r.year].push(r);
-  });
-  const years = Object.keys(yearMap).map(Number).sort((a, b) => a - b);
-
-  // Annual summary: sum flows, use last quarter for end balances
-  const annualResults = years.map(yr => {
-    const qs = yearMap[yr];
-    const last = qs[qs.length - 1];
-    const first = qs[0];
-    return {
-      year: yr, quarters: qs,
-      salaryIncome:       qs.reduce((s, q) => s + q.salaryIncome, 0),
-      pensionDrawn:       qs.reduce((s, q) => s + q.pensionDrawn, 0),
-      statePensionIncome: qs.reduce((s, q) => s + q.statePensionIncome, 0),
-      savingsInterest:    qs.reduce((s, q) => s + q.savingsInterest, 0),
-      oneOff:             qs.reduce((s, q) => s + q.oneOff, 0),
-      houseSale:          qs.reduce((s, q) => s + q.houseSale, 0),
-      totalIncome:        qs.reduce((s, q) => s + q.totalIncome, 0),
-      mortgage:           qs.reduce((s, q) => s + q.mortgage, 0),
-      rent:               qs.reduce((s, q) => s + q.rent, 0),
-      housePurchase:      qs.reduce((s, q) => s + q.housePurchase, 0),
-      targetSpend:        qs.reduce((s, q) => s + q.targetSpend, 0),
-      totalOutgoings:     qs.reduce((s, q) => s + q.totalOutgoings, 0),
-      pensionStart:       first.pensionStart,
-      pensionEnd:         last.pensionEnd,
-      savingsEnd:         last.savingsEnd,
-    };
-  });
-
-  // Warnings (per year)
-  const wDiv = document.getElementById('warnings');
-  wDiv.innerHTML = '';
-  annualResults.forEach(r => {
-    if (r.savingsEnd < 0)
-      wDiv.innerHTML += `<div class="err-box">🔴 ${r.year}: savings go negative (${gbp(r.savingsEnd)})</div>`;
-  });
-
-  // Chart uses raw quarterly results
-  drawChart(results, p);
-
-  // Table uses annual summaries with expandable quarters
-  const cols = orderedCols();
-
-  let html = `<table><thead><tr>`;
-  cols.forEach(c => {
-    const drag = c.draggable ? 'draggable="true"' : '';
-    const align = c.key === 'year' ? 'left' : '';
-    html += `<th data-col="${c.key}" ${drag} style="${align ? 'text-align:left' : ''}">${c.label}</th>`;
-  });
-  html += `</tr></thead><tbody>`;
-
-  annualResults.forEach(r => {
-    const exp      = expandedYears.has(r.year);
-    const rowClass = r.savingsEnd < 0 ? 'insolvent' : '';
-    const icon     = `<span class="expand" data-yr="${r.year}">${exp ? '▼' : '▶'}</span>`;
-
-    html += `<tr class="${rowClass}">`;
-    cols.forEach(c => {
-      if (c.key === 'year') {
-        html += `<td>${icon}${r.year}</td>`;
-      } else {
-        html += `<td>${colCell(c.key, r, p, false)}</td>`;
-      }
-    });
-    html += `</tr>`;
-
-    if (exp) {
-      r.quarters.forEach(q => {
-        const qLabel = `Q${q.quarter + 1}`;
-        html += `<tr class="qrow">`;
-        cols.forEach(c => {
-          if (c.key === 'year') {
-            html += `<td>${qLabel}</td>`;
-          } else {
-            html += `<td>${colCell(c.key, q, p, false)}</td>`;
-          }
-        });
-        html += `</tr>`;
-      });
-    }
-  });
-
-  html += '</tbody></table>';
-  document.getElementById('results').innerHTML = html;
-
-  // ── Drag-and-drop column reordering ──────────
-  let dragSrcKey = null;
-  document.querySelectorAll('th[draggable="true"]').forEach(th => {
-    th.addEventListener('dragstart', e => {
-      dragSrcKey = th.dataset.col;
-      th.classList.add('dragging');
-      e.dataTransfer.effectAllowed = 'move';
-    });
-    th.addEventListener('dragend', () => {
-      th.classList.remove('dragging');
-      document.querySelectorAll('th').forEach(h => h.classList.remove('drag-over'));
-    });
-    th.addEventListener('dragover', e => {
-      e.preventDefault();
-      e.dataTransfer.dropEffect = 'move';
-      document.querySelectorAll('th').forEach(h => h.classList.remove('drag-over'));
-      if (th.dataset.col !== dragSrcKey) th.classList.add('drag-over');
-    });
-    th.addEventListener('dragleave', () => th.classList.remove('drag-over'));
-    th.addEventListener('drop', e => {
-      e.preventDefault();
-      th.classList.remove('drag-over');
-      const destKey = th.dataset.col;
-      if (!dragSrcKey || dragSrcKey === destKey) return;
-      const srcIdx  = colOrder.indexOf(dragSrcKey);
-      const destIdx = colOrder.indexOf(destKey);
-      if (srcIdx === -1 || destIdx === -1) return;
-      // Move srcKey to destKey's position
-      colOrder.splice(srcIdx, 1);
-      colOrder.splice(destIdx, 0, dragSrcKey);
-      saveColOrder(colOrder);
-      renderResults(lastResults, lastParams);
-    });
-  });
-
-  document.querySelectorAll('.expand').forEach(el => {
-    el.addEventListener('click', e => {
-      const yr = +e.target.dataset.yr;
-      expandedYears.has(yr) ? expandedYears.delete(yr) : expandedYears.add(yr);
-      renderResults(lastResults, lastParams);
-    });
-  });
-}
-
-// ═══════════════════════════════════════════════
-//  SAVE / LOAD  (localStorage)
-// ═══════════════════════════════════════════════
-const STORAGE_KEY = 'retirementPlanner_saves';
-
-function allSaves() {
-  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); }
-  catch { return {}; }
-}
-function persistSaves(saves) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(saves));
-}
-
-function refreshSaveSelect() {
-  const sel = document.getElementById('save-select');
-  const current = sel.value;
-  sel.innerHTML = '<option value="">— load —</option>';
-  const saves = allSaves();
-  Object.keys(saves).sort().forEach(name => {
-    const o = document.createElement('option');
-    o.value = name; o.textContent = name;
-    if (name === current) o.selected = true;
-    sel.appendChild(o);
-  });
-}
-
-function saveScenario() {
-  const name = document.getElementById('save-name').value.trim();
-  if (!name) { setStatus('Enter a scenario name first.', true); return; }
-  const p = readParams();
-  const saves = allSaves();
-  saves[name] = {
-    fieldCurrency: p._fieldCurrency,
-    rawValues:     p._rawValues,
-    plainValues:   p._plainValues,
-    selectValues:  p._selectValues,
-    events:        events,
-    savedAt:       new Date().toISOString(),
-  };
-  persistSaves(saves);
-  refreshSaveSelect();
-  // select the just-saved name in the dropdown
-  document.getElementById('save-select').value = name;
-  setStatus(`Saved "${name}"`);
-}
-
-function loadScenario() {
-  const name = document.getElementById('save-select').value;
-  if (!name) { setStatus('Select a scenario to load.', true); return; }
-  const saves = allSaves();
-  const s = saves[name];
-  if (!s) { setStatus('Scenario not found.', true); return; }
-
-  // Restore plain inputs
-  Object.entries(s.plainValues).forEach(([id, val]) => {
-    const el = document.getElementById(id);
-    if (el) el.value = val;
-  });
-
-  // Restore selects (quarter selectors)
-  Object.entries(s.selectValues).forEach(([id, val]) => {
-    const el = document.getElementById(id);
-    if (el) for (const o of el.options) { if (o.value === val) { o.selected = true; break; } }
-  });
-
-  // Restore money values + currency toggles
-  Object.entries(s.rawValues).forEach(([id, val]) => {
-    const el = document.getElementById(id);
-    if (el) el.value = val;
-  });
-  Object.entries(s.fieldCurrency).forEach(([id, cur]) => {
-    fieldCurrency[id] = cur;
-    const toggle = document.querySelector(`.cur-toggle[data-id="${id}"]`);
-    if (toggle) {
-      toggle.querySelectorAll('button').forEach(b => {
-        b.classList.toggle('active', b.dataset.cur === cur);
-      });
-    }
-  });
-
-  // Restore events
-  events = (s.events || []).map(e => Object.assign({ fractYear: new Date().getFullYear(), amount: 0, description: '', currency: 'GBP' }, e));
-  renderEvents();
-
-  document.getElementById('save-name').value = name;
-  setStatus(`Loaded "${name}"`);
-}
-
-function deleteScenario() {
-  const name = document.getElementById('save-select').value;
-  if (!name) { setStatus('Select a scenario to delete.', true); return; }
-  if (!confirm(`Delete scenario "${name}"?`)) return;
-  const saves = allSaves();
-  delete saves[name];
-  persistSaves(saves);
-  refreshSaveSelect();
-  setStatus(`Deleted "${name}"`);
-}
-
-let statusTimer;
-function setStatus(msg, isError) {
-  const el = document.getElementById('save-status');
-  el.textContent = msg;
-  el.style.color = isError ? '#b00' : '#2a7a2a';
-  clearTimeout(statusTimer);
-  statusTimer = setTimeout(() => { el.textContent = ''; }, 3000);
-}
-
-document.getElementById('btn-save').addEventListener('click', saveScenario);
-document.getElementById('btn-load').addEventListener('click', loadScenario);
-document.getElementById('btn-delete').addEventListener('click', deleteScenario);
-
-// ─── Run button ───────────────────────────────
-document.getElementById('btn-run').addEventListener('click', () => {
-  const p = readParams();
-  renderResults(simulate(p), p);
-});
-
-// Populate save list on startup
-refreshSaveSelect();
-
-// Redraw chart on resize so canvas pixels stay sharp
-window.addEventListener('resize', () => {
-  if (lastResults && lastParams) drawChart(lastResults, lastParams);
-});
-</script>
+<script type="module" src="/src/main.js"></script>
 </body>
 </html>
