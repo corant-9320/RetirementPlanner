@@ -312,21 +312,30 @@ document.getElementById('btn-save').addEventListener('click', () => {
   }
 });
 
+/**
+ * Restore a saved scenario into the form and run it. Returns false when the
+ * scenario is missing or unreadable. With asBaseline, the loaded state becomes
+ * the start of undo history instead of an undoable step (used at startup).
+ */
+function loadAndRun(name, { asBaseline = false } = {}) {
+  const result = loadScenario(name);
+  if (!result || result.ok === false) return false;
+  const saved = result.snapshot ?? result.scenario ?? result.data ?? result.value ?? result;
+  restoreForm(saved, applyRestoredLists);
+  saveNameEl.value = name;
+  saveSelectEl.value = name;
+  const ran = runSimulation();
+  if (asBaseline) paramHistory.reset();
+  else paramHistory.flush(); // loading a scenario is a single undoable step
+  setStatus(ran ? `Loaded "${name}"` : `Loaded "${name}"; correct the highlighted inputs.`, !ran);
+  return true;
+}
+
 document.getElementById('btn-load').addEventListener('click', () => {
   const name = saveSelectEl.value;
   if (!name) { setStatus('Select a scenario to load.', true); return; }
   try {
-    const result = loadScenario(name);
-    if (!result || result.ok === false) {
-      setStatus(result?.error || 'Scenario not found.', true);
-      return;
-    }
-    const saved = result.snapshot ?? result.scenario ?? result.data ?? result.value ?? result;
-    restoreForm(saved, applyRestoredLists);
-    saveNameEl.value = name;
-    const ran = runSimulation();
-    paramHistory.flush(); // loading a scenario is a single undoable step
-    setStatus(ran ? `Loaded "${name}"` : `Loaded "${name}"; correct the highlighted inputs.`, !ran);
+    if (!loadAndRun(name)) setStatus('Scenario not found.', true);
   } catch (error) {
     setStatus(error?.message || 'Scenario could not be loaded.', true);
   }
@@ -354,6 +363,15 @@ try {
   refreshSaveSelect(saveSelectEl);
 } catch (error) {
   setStatus(error?.message || 'Saved scenarios could not be listed.', true);
+}
+
+// Open on the saved "Default" scenario when there is one; otherwise simulate
+// the built-in form values so results are shown straight away.
+const STARTUP_SCENARIO = 'Default';
+try {
+  if (!loadAndRun(STARTUP_SCENARIO, { asBaseline: true })) runSimulation();
+} catch (error) {
+  setStatus(error?.message || `Scenario "${STARTUP_SCENARIO}" could not be loaded.`, true);
 }
 
 // Redraw chart on resize
