@@ -31,7 +31,7 @@ test('explicit horizon is inclusive and a past horizon is guarded', () => {
   assert.deepEqual(results.map(result => result.fq), [2026, 2026.25, 2026.5]);
   const defaults = params();
   delete defaults.endFY;
-  assert.equal(simulate(defaults, 2050.5).at(-1).fq, 2050.75);
+  assert.equal(simulate(defaults, 2060.5).at(-1).fq, 2060.75);
 });
 
 test('cash-flow and balance invariants reconcile every quarter', () => {

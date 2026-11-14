@@ -104,3 +104,10 @@ test('drawdown lines need finite quarter dates, distinct starts, and rates in 0â
   delete missing.drawdowns;
   assert.ok(fields(validateParams(missing)).includes('drawdowns'));
 });
+
+test('the default horizon includes 2060 Q4 when no end date is supplied', () => {
+  const params = validParams();
+  delete params.endFY;
+  assert.deepEqual(validateParams(params, { startFY: 2060.5 }), []);
+  assert.ok(fields(validateParams(params, { startFY: 2061 })).includes('endFY'));
+});

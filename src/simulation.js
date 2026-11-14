@@ -4,6 +4,7 @@
  */
 
 import { calcTaxHousehold, proRataBands, quarterlyRate } from './utils.js';
+import { DEFAULT_END_FY } from './constants.js';
 
 /** Zeroed cumulative tax result, used as the opening position of a tax year. */
 export function zeroTax() {
@@ -81,7 +82,7 @@ export function taxPersonDelta(now, was) {
  * @returns {Array} Quarterly result objects
  */
 export function simulate(p, startFY) {
-  const endFY = p.endFY == null ? 2050.75 : p.endFY;
+  const endFY = p.endFY == null ? DEFAULT_END_FY : p.endFY;
   if (!Number.isFinite(startFY) || !Number.isFinite(endFY) || startFY > endFY) return [];
 
   // Work with a private snapshot so callers may safely edit their event list

@@ -2,7 +2,7 @@
 
 ## Purpose and scope
 
-The application is a client-side retirement cash-flow planner. It produces one deterministic projection from the current calendar quarter through 2050 Q4; it does not currently produce probabilities, stochastic ranges, financial advice, or guarantees. Inputs and outputs are expressed in today's-money terms, so entered growth, return, borrowing, and pension-increase rates are expected to be real (net of inflation).
+The application is a client-side retirement cash-flow planner. It produces one deterministic projection from the current calendar quarter through 2060 Q4; it does not currently produce probabilities, stochastic ranges, financial advice, or guarantees. Inputs and outputs are expressed in today's-money terms, so entered growth, return, borrowing, and pension-increase rates are expected to be real (net of inflation).
 
 The browser is the only runtime dependency. There is no backend, login, account sync, IP allowlist, database, or supported scenario export/import workflow.
 
@@ -43,7 +43,7 @@ Named scenarios and column order persist only in the current browser's `localSto
 
 ## Acceptance expectations
 
-- Re-running unchanged inputs at the same supplied start quarter yields deeply equal quarterly results through 2050 Q4.
+- Re-running unchanged inputs at the same supplied start quarter yields deeply equal quarterly results through 2060 Q4.
 - Every quarter satisfies cash reconciliation within floating-point tolerance; annual flow fields equal their quarter sums and annual endpoint balances equal the appropriate quarter endpoints.
 - Real annual rates compound to the entered annual rate over four quarters; salary retirement-quarter proration and one-shot events/property transitions occur once at documented boundaries.
 - Tax tests cover April–March rollover, partial tax years, one/two-person attribution, savings relief, tax-free pension drawdown, and possible cumulative refunds.

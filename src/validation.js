@@ -1,3 +1,5 @@
+import { DEFAULT_END_FY } from './constants.js';
+
 /** @typedef {import('./contracts.js').SimulationParams} SimulationParams */
 
 const REQUIRED_NUMBERS = [
@@ -102,7 +104,7 @@ export function validateParams(params, { startFY } = {}) {
     }
   }
 
-  const endFY = params.endFY == null ? 2050.75 : params.endFY;
+  const endFY = params.endFY == null ? DEFAULT_END_FY : params.endFY;
   if (startFY != null && !isFiniteNumber(startFY)) add('startFY', 'must be a finite number');
   else if (startFY != null && !quarterAligned(startFY)) add('startFY', 'must be aligned to a calendar quarter');
   if (isFiniteNumber(startFY) && isFiniteNumber(endFY) && endFY < startFY) {
