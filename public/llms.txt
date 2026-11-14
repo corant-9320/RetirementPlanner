@@ -1,0 +1,13 @@
+# Retirement Planner
+
+> A client-side deterministic retirement cash-flow planner. Financial calculations are estimates, not advice.
+
+## Application
+
+- [Retirement Planner](/): Enter a scenario and inspect quarterly and annual savings, pension, property and estimated UK tax projections.
+
+## Important behavior
+
+- All scenario data remains in the current browser's localStorage.
+- Inputs use today's-money assumptions and real annual rates.
+- The projection is deterministic and does not provide probabilities or guarantees.

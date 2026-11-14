@@ -3,24 +3,26 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Retirement Planner — Protected by IP lock</title>
+  <meta name="description" content="A private, client-side retirement cash-flow planner for deterministic savings, pension, property and tax projections." />
+  <title>Retirement Planner</title>
+  <link rel="icon" href="data:," />
   <link rel="stylesheet" href="/src/styles.css" />
 </head>
 <body>
-<div id="app">
+<main id="app">
   <!-- ═══ LEFT PANEL ═══ -->
   <div id="left">
 
     <!-- Save bar -->
     <div id="save-bar">
-      <input type="text" id="save-name" placeholder="Scenario name…" value="Default" />
+      <input type="text" id="save-name" aria-label="Scenario name" placeholder="Scenario name…" value="Default" />
       <button class="sbar-btn primary" id="btn-save">💾 Save</button>
-      <select id="save-select"><option value="">— load —</option></select>
+      <select id="save-select" aria-label="Saved scenarios"><option value="">— load —</option></select>
       <button class="sbar-btn" id="btn-load">Load</button>
       <button class="sbar-btn danger" id="btn-delete">Delete</button>
       <button class="sbar-btn" id="btn-undo" title="Undo parameter change (Ctrl+Z)" aria-label="Undo parameter change" disabled>↶ Undo</button>
       <button class="sbar-btn" id="btn-redo" title="Redo parameter change (Ctrl+Shift+Z)" aria-label="Redo parameter change" disabled>↷ Redo</button>
-      <div id="save-status"></div>
+      <div id="save-status" role="status" aria-live="polite"></div>
     </div>
 
     <div id="left-inner">
@@ -210,7 +212,7 @@
             <div class="yq-wrap"><input class="plain" type="number" id="drawdownYear" value="2045" /><select id="drawdownQ"><option value="0">Q1</option><option value="0.25">Q2</option><option value="0.5">Q3</option><option value="0.75">Q4</option></select></div>
           </div>
           <div class="field"><label>Annual drawdown %</label>
-            <input class="plain" type="number" id="drawdown" step="0.1" value="5.0" />
+            <div class="input-action"><input class="plain" type="number" id="drawdown" step="0.1" value="5.0" /><button class="btn-sm" id="btn-optimise-drawdown" type="button" title="Set the lowest drawdown % that keeps savings from going negative">Find lowest</button></div>
           </div>
         </div>
       </div>
@@ -269,9 +271,10 @@
         <div class="section">
           <div class="section-title">One-off Events &nbsp;<small style="font-weight:400;text-transform:none;font-size:10px">(+ve = receipt, −ve = expense)</small></div>
           <div id="events-list"></div>
-          <button class="btn-sm" id="btn-add-event">＋ Add event</button>
+          <button class="btn-sm" id="btn-add-event" type="button">＋ Add event</button>
         </div>
-        <button id="btn-run">Run Simulation →</button>
+        <div id="form-errors" class="form-errors" role="alert" tabindex="-1" hidden></div>
+        <button id="btn-run" type="button">Run Simulation →</button>
       </div>
 
     </div><!-- /form-grid -->
@@ -280,11 +283,12 @@
 
   <!-- ═══ RIGHT PANEL ═══ -->
   <div id="right">
-    <div id="warnings"></div>
-    <canvas id="nw-chart" style="width:100%;height:260px;display:none;margin-bottom:14px;"></canvas>
+    <div id="warnings" role="status" aria-live="polite"></div>
+    <canvas id="nw-chart" role="img" aria-describedby="chart-summary" hidden></canvas>
+    <p id="chart-summary" class="chart-summary" aria-live="polite">Run the simulation to display a net worth chart.</p>
     <div id="results"><p class="placeholder">Set your parameters and click <strong>Run Simulation</strong>.</p></div>
   </div>
-</div>
+</main>
 <script type="module" src="/src/main.js"></script>
 </body>
 </html>

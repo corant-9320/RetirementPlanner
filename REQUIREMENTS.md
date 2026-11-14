@@ -1,76 +1,52 @@
-# Retirement Planner — Functional Requirements
+# Retirement Planner — Current Requirements
 
-The goal of the retirement planner is to pass in some parameters describing current financial situation and some projections for future changes. The planner will then model a range of future scenarios in order to predict a range of financial outcomes for each year through to 2050. All numbers are in today's terms. This means interest rates need to be entered net of inflation. Some values will be in EUR, others in GBP.
+## Purpose and scope
 
-## Input Parameters
+The application is a client-side retirement cash-flow planner. It produces one deterministic projection from the current calendar quarter through 2050 Q4; it does not currently produce probabilities, stochastic ranges, financial advice, or guarantees. Inputs and outputs are expressed in today's-money terms, so entered growth, return, borrowing, and pension-increase rates are expected to be real (net of inflation).
 
-- EUR to GBP exchange rate
-- Current Net Salary
-- Months to continue working
-- Current Savings and expected return rate
-- Current Private Pensions and expected return rate and drawdown rate
-- Current State Pensions amount and start date for user and spouse. Expected increase per year
-- Mortgage Remaining
-- Mortgage Payments
-- Expected House Sale Date and Price
-- A number of One Off events - Amount and date
-- A minimum threshold for Savings
+The browser is the only runtime dependency. There is no backend, login, account sync, IP allowlist, database, or supported scenario export/import workflow.
 
-## Output
+## Inputs
 
-- Yearly Expenditure Budget
-- End of year Savings
+The planner accepts an EUR→GBP exchange rate; net annual salary and remaining work months; savings, real savings/borrowing rates; private pension balance, real return, drawdown rate/date, and tax-free drawdown percentage; up to three state-pension streams and a real increase rate; property value/growth, mortgage balance/payment/capital repayment, sale timing, rent, and replacement purchase; target living spend; configurable UK tax assumptions; and dated positive or negative one-off events.
 
-## UI
+Currency-toggle values and EUR events are converted to GBP when parameters are read. The simulation then operates entirely in GBP.
 
-- Left hand panel collects the Input parameters
-- Right hand contains rows per year (expandable to quarters). Columns are Income from Pension and Savings interest, Outgoings, Total Outgoings, Pension Remaining at start of year, Savings Remaining
+## Deterministic model and timing
 
-## Backlog
+- `simulate(params, startFY)` is pure: identical parameters and fractional-year start produce identical quarterly results.
+- Annual rates use equivalent quarterly compounding, not annual-rate ÷ 4. Pension drawdown and target spend use annual amount/rate ÷ 4.
+- Salary is already net of tax, is paid quarterly, and is prorated in the final working quarter.
+- Savings interest is based on the opening balance. Negative savings accrue the configured borrowing rate.
+- State-pension input amounts are uprated from the projection start to their start dates and thereafter; payments begin in the selected quarter.
+- One-off events occur only in their exact selected quarter. Property sale and purchase are one-shot events in the first simulated quarter at or after their dates.
+- A sale occurs at the start of its quarter, transfers house value less remaining mortgage (including negative equity) to savings, and skips that quarter's house growth. A purchase is paid from savings and added to property value. Rent runs after sale until purchase, or indefinitely when no purchase is planned.
+- Mortgage outflow is capital repayment plus the implied interest portion of the configured payment; there is no separate mortgage-rate/amortisation model.
+- Quarterly cash reconciliation is `ending savings = opening savings + total income − total outgoings`. House-sale equity is income; living spend, mortgage, rent, purchase, and tax are outgoings.
 
-### 1. Stochastic projection (range of outcomes)
+## Tax assumptions
 
-The engine currently produces a single deterministic path from constant real
-rates. The stated goal is a *range* of outcomes, which this cannot show. In
-particular, sequence-of-returns risk is invisible: a plan averaging 4% real
-survives comfortably on a smooth path but can fail if the poor years land early
-in drawdown.
+Tax is an estimate using user-entered UK thresholds/rates, not an automatically updated tax-law service. It is recalculated cumulatively over simulated quarters of each April–March tax year; each quarter records the change in cumulative liability and can therefore contain a refund. Calendar-year table rows can span two tax years and need not equal a standalone annual tax calculation.
 
-Intent:
+Net salary, one-off events, property proceeds, and savings principal are not taxed. The taxable private-pension fraction and the owner's state pensions belong to person 1; the spouse state pension belongs to person 2 when two taxpayers are selected; positive savings interest is split equally. Savings starting-rate relief and the Personal Savings Allowance are modelled. National Insurance, dividends, capital gains, personal-allowance taper above £100,000, and other reliefs are not modelled.
 
-- Run N trials (~1,000) with the savings and pension return rates drawn per
-  period rather than held constant, taking volatility as an input alongside the
-  existing mean.
-- Report the distribution rather than one line: success rate (savings staying
-  above zero to 2050), and percentile bands for savings and net worth.
-- Render the percentile bands on the existing chart, with the deterministic run
-  overlaid as the central case.
-- Keep the deterministic mode available — it stays the right tool for checking
-  the mechanics of a scenario.
+## Outputs and interaction
 
-Notes: the simulation engine is already pure and side-effect free, so trials can
-reuse `simulate()` unchanged if the rates become per-quarter inputs. House growth
-is probably best left deterministic given the property is a lumpy single asset.
+The result is a quarterly series rendered as calendar-year summaries expandable to quarters, a reorderable table, negative-savings warnings, and a stacked savings/pension/housing-equity chart. Annual income/outgoing/tax figures are sums of displayed quarters; annual opening/closing balances come from the first/last available quarter.
 
-### 2. Auto-optimise target spend
+The "Find lowest" button beside the drawdown rate scans 0–100% in 0.1% steps, holding every other input (including the drawdown start date) fixed, and sets the lowest rate at which savings never close a quarter below zero. A higher rate does not always leave more savings later (the pot empties sooner and income can move into higher bands), so the search is a full upward scan rather than a bisection. Pension left at the end of the projection is not taxed or valued. When no rate works, the planner says whether the shortfall falls before drawdown starts, there is no pot, or even the longest-lasting rate runs out, and leaves the field unchanged. Setting the rate is one undoable step and re-runs the simulation.
 
-Target annual expenditure is currently an input, so finding the affordable
-number means adjusting it by hand and re-running until savings stay solvent.
-Invert it.
+Named scenarios and column order persist only in the current browser's `localStorage`. Saving does not sync or transmit data. Undo/redo is in-memory, snapshot-based, capped at 100 steps, and resets on reload.
 
-Intent:
+## Acceptance expectations
 
-- Take a minimum savings threshold as the input (the floor the balance must not
-  breach at any point through to 2050).
-- Solve for the highest sustainable target annual spend that keeps projected
-  savings at or above that floor for the whole projection, and write the result
-  back into the target spend field.
-- Bisection over the existing `simulate()` is sufficient; the relationship
-  between spend and terminal savings is monotonic, so it converges quickly.
-- Present it as an "Auto-optimise" action next to Run Simulation, not as a mode:
-  it computes a number, populates the field, and leaves the user free to
-  override it.
+- Re-running unchanged inputs at the same supplied start quarter yields deeply equal quarterly results through 2050 Q4.
+- Every quarter satisfies cash reconciliation within floating-point tolerance; annual flow fields equal their quarter sums and annual endpoint balances equal the appropriate quarter endpoints.
+- Real annual rates compound to the entered annual rate over four quarters; salary retirement-quarter proration and one-shot events/property transitions occur once at documented boundaries.
+- Tax tests cover April–March rollover, partial tax years, one/two-person attribution, savings relief, tax-free pension drawdown, and possible cumulative refunds.
+- Persistence tests cover malformed storage, complete round trips, legacy-shape migration, and unchanged scenario semantics; history tests cover coalescing, redo invalidation, limits, and restore without recursive recording.
+- A production candidate must pass `npm run check`, which executes the complete Node test suite and production build, followed by a browser smoke check.
 
-This supersedes the original "minimum threshold for Savings" requirement as a
-warning trigger — the threshold becomes the constraint that drives the
-calculation rather than an alert after the fact.
+## Deferred capabilities
+
+Stochastic trials/percentile outcomes and automatic optimisation of sustainable spend remain future work. Preserve deterministic mode as the mechanics baseline when adding either capability.

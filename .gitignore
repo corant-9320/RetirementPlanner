@@ -1,19 +1,14 @@
 node_modules/
 dist/
-build/
-.venv/
-venv/
-__pycache__/
-*.pyc
-*.pyo
-*.egg-info/
-.DS_Store
+.vite/
 .env
 .env.local
 *.log
+.DS_Store
 .vscode/
 .idea/
 *.swp
 *.swo
-.kiro/
-.vite/
+# Keep project steering in version control; settings are machine-specific.
+.kiro/settings/
+venv/

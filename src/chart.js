@@ -9,7 +9,18 @@
  * @param {Array} results - Quarterly simulation results
  */
 export function drawChart(canvas, results) {
-  canvas.style.display = 'block';
+  const summary = document.getElementById('chart-summary');
+  const safeResults = Array.isArray(results) ? results : [];
+  const n = safeResults.length;
+
+  if (n === 0) {
+    canvas.hidden = true;
+    canvas.removeAttribute('aria-label');
+    if (summary) summary.textContent = 'No chart data is available for this simulation.';
+    return;
+  }
+
+  canvas.hidden = false;
 
   // Sharp on HiDPI displays
   const dpr = window.devicePixelRatio || 1;
@@ -27,23 +38,22 @@ export function drawChart(canvas, results) {
   const plotH = H - PAD.top - PAD.bottom;
 
   // Build three component series
-  const n = results.length;
-  const sSavings = results.map(r => r.savingsEnd);
-  const sPension = results.map(r => r.pensionEnd);
+  const sSavings = safeResults.map(r => r.savingsEnd);
+  const sPension = safeResults.map(r => r.pensionEnd);
   // True housing equity — not floored at zero, so negative equity is visible.
-  const sHousing = results.map(r => (r.houseVal || 0) - (r.mortgageLeft || 0));
+  const sHousing = safeResults.map(r => (r.houseVal || 0) - (r.mortgageLeft || 0));
 
   // Stacked boundaries
   const sBot = sSavings;
-  const sMid = results.map((_, i) => sSavings[i] + sPension[i]);
-  const sTop = results.map((_, i) => sSavings[i] + sPension[i] + sHousing[i]);
+  const sMid = safeResults.map((_, i) => sSavings[i] + sPension[i]);
+  const sTop = safeResults.map((_, i) => sSavings[i] + sPension[i] + sHousing[i]);
 
   const allVals = [...sBot, ...sMid, ...sTop];
   const minVal = Math.min(0, ...allVals);
   const maxVal = Math.max(1, ...allVals);
   const range = maxVal - minVal;
 
-  const xOf = i => PAD.left + (i / (n - 1)) * plotW;
+  const xOf = i => n === 1 ? PAD.left + plotW / 2 : PAD.left + (i / (n - 1)) * plotW;
   const yOf = v => PAD.top + plotH - ((v - minVal) / range) * plotH;
 
   // Background
@@ -53,6 +63,12 @@ export function drawChart(canvas, results) {
   // Filled bands
   function fillBand(lower, upper, color) {
     ctx.fillStyle = color;
+    if (n === 1) {
+      const top = Math.min(yOf(lower[0]), yOf(upper[0]));
+      const height = Math.max(2, Math.abs(yOf(lower[0]) - yOf(upper[0])));
+      ctx.fillRect(xOf(0) - 18, top, 36, height);
+      return;
+    }
     ctx.beginPath();
     ctx.moveTo(xOf(0), yOf(lower[0]));
     for (let i = 1; i < n; i++) ctx.lineTo(xOf(i), yOf(lower[i]));
@@ -61,7 +77,7 @@ export function drawChart(canvas, results) {
     ctx.fill();
   }
 
-  const sFloor = results.map(() => minVal);
+  const sFloor = safeResults.map(() => minVal);
   fillBand(sFloor, sBot, 'rgba(26,110,181,0.50)');  // savings — blue
   fillBand(sBot, sMid, 'rgba(42,180,140,0.55)');    // pension — teal
   fillBand(sMid, sTop, 'rgba(230,160,40,0.55)');    // housing — amber
@@ -74,6 +90,12 @@ export function drawChart(canvas, results) {
     ctx.beginPath();
     series.forEach((v, i) => (i === 0 ? ctx.moveTo(xOf(i), yOf(v)) : ctx.lineTo(xOf(i), yOf(v))));
     ctx.stroke();
+    if (n === 1) {
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(xOf(0), yOf(series[0]), 2.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
   }
   drawLine(sBot, 'rgba(26,110,181,0.9)');
   drawLine(sMid, 'rgba(42,180,140,0.9)');
@@ -113,7 +135,7 @@ export function drawChart(canvas, results) {
   // X-axis year labels
   ctx.textAlign = 'center';
   ctx.fillStyle = '#888';
-  results.forEach((r, i) => {
+  safeResults.forEach((r, i) => {
     if (r.quarter === 0 && r.year % 5 === 0) {
       ctx.fillText(r.year, xOf(i), H - PAD.bottom + 14);
     }
@@ -138,4 +160,19 @@ export function drawChart(canvas, results) {
     ctx.fillText(item.label, legX + 16, PAD.top + 17);
     legX += ctx.measureText(item.label).width + 38;
   });
+
+  const first = safeResults[0];
+  const last = safeResults[n - 1];
+  const money = value => new Intl.NumberFormat('en-GB', {
+    style: 'currency',
+    currency: 'GBP',
+    maximumFractionDigits: 0,
+  }).format(value || 0);
+  const period = n === 1 ? `${last.year} Q${last.quarter + 1}`
+    : `${first.year} Q${first.quarter + 1} to ${last.year} Q${last.quarter + 1}`;
+  const endingHousing = (last.houseVal || 0) - (last.mortgageLeft || 0);
+  const endingTotal = (last.savingsEnd || 0) + (last.pensionEnd || 0) + endingHousing;
+  const summaryText = `Net worth chart for ${period}. Ending savings ${money(last.savingsEnd)}, pension ${money(last.pensionEnd)}, housing equity ${money(endingHousing)}, total ${money(endingTotal)}.`;
+  canvas.setAttribute('aria-label', summaryText);
+  if (summary) summary.textContent = summaryText;
 }

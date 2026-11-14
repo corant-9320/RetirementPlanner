@@ -24,23 +24,79 @@ export const ALL_COLUMNS = [
   { key: 'savingsEnd', label: 'Savings (yr end)', draggable: true },
 ];
 
-const COL_ORDER_KEY = 'retirementPlanner_colOrder';
+export const COL_ORDER_KEY = 'retirementPlanner_colOrder';
 
-export function loadColOrder() {
+const DEFAULT_COL_ORDER = Object.freeze(ALL_COLUMNS.map(column => column.key));
+
+/** Validate exact key membership, uniqueness, and the pinned year-first rule. */
+export function isValidColOrder(order) {
+  if (!Array.isArray(order) || order.length !== DEFAULT_COL_ORDER.length || order[0] !== 'year') {
+    return false;
+  }
+  const keys = new Set(order);
+  return keys.size === order.length && DEFAULT_COL_ORDER.every(key => keys.has(key));
+}
+
+export const validateColOrder = isValidColOrder;
+
+/**
+ * Produce a valid detached order. Known unique keys retain their relative order;
+ * year is pinned first and missing keys are appended in their default order.
+ */
+export function normalizeColOrder(order) {
+  if (!Array.isArray(order)) return [...DEFAULT_COL_ORDER];
+  const known = new Set(DEFAULT_COL_ORDER);
+  const seen = new Set(['year']);
+  const normalized = ['year'];
+  for (const key of order) {
+    if (key !== 'year' && known.has(key) && !seen.has(key)) {
+      seen.add(key);
+      normalized.push(key);
+    }
+  }
+  for (const key of DEFAULT_COL_ORDER) {
+    if (!seen.has(key)) {
+      seen.add(key);
+      normalized.push(key);
+    }
+  }
+  return normalized;
+}
+
+function getStorage(storage) {
+  if (storage !== undefined) return storage;
+  try { return globalThis.localStorage; } catch { return undefined; }
+}
+
+export function loadColOrder(storage) {
+  const target = getStorage(storage);
+  if (!target || typeof target.getItem !== 'function') return [...DEFAULT_COL_ORDER];
   try {
-    const saved = JSON.parse(localStorage.getItem(COL_ORDER_KEY));
-    if (Array.isArray(saved) && saved.length === ALL_COLUMNS.length) return saved;
-  } catch { /* ignore */ }
-  return ALL_COLUMNS.map(c => c.key);
+    const saved = JSON.parse(target.getItem(COL_ORDER_KEY));
+    return isValidColOrder(saved) ? [...saved] : [...DEFAULT_COL_ORDER];
+  } catch {
+    return [...DEFAULT_COL_ORDER];
+  }
 }
 
-export function saveColOrder(order) {
-  localStorage.setItem(COL_ORDER_KEY, JSON.stringify(order));
+export function saveColOrder(order, storage) {
+  if (!isValidColOrder(order)) return { ok: false, error: 'invalid-order' };
+  const target = getStorage(storage);
+  if (!target || typeof target.setItem !== 'function') {
+    return { ok: false, error: 'storage-unavailable' };
+  }
+  try {
+    target.setItem(COL_ORDER_KEY, JSON.stringify(order));
+    return { ok: true };
+  } catch {
+    return { ok: false, error: 'write-failed' };
+  }
 }
 
-/** Get ordered column descriptors based on current order array. */
+/** Get a complete, valid ordered set of column descriptors. */
 export function orderedCols(colOrder) {
-  return colOrder.map(key => ALL_COLUMNS.find(c => c.key === key)).filter(Boolean);
+  const byKey = new Map(ALL_COLUMNS.map(column => [column.key, column]));
+  return normalizeColOrder(colOrder).map(key => byKey.get(key));
 }
 
 /** Build tooltip for one-off events cell. */
@@ -48,7 +104,9 @@ function oneOffTooltip(eventsInYear, houseSaleAmt, p) {
   const lines = [];
   eventsInYear.forEach(e => {
     const amt = e.currency === 'EUR' ? e.amount * p.eurGbp : e.amount;
-    const label = e.description || '(no description)';
+    const label = (e.description || '(no description)').replace(/[&<>"']/g, char => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+    })[char]);
     lines.push(`${label}: ${gbp(amt)}`);
   });
   if (houseSaleAmt) lines.push(`House sale (equity \u2192 cash): ${gbp(houseSaleAmt)}`);

@@ -3,14 +3,17 @@
  * Wires together form, simulation, rendering, storage, and events modules.
  */
 
-import { currentFractYear } from './utils.js';
+import { currentFractYear, fmtYQ } from './utils.js';
+import { validateParams } from './validation.js';
 import { simulate } from './simulation.js';
+import { findMinimumDrawdown } from './optimise.js';
 import { drawChart } from './chart.js';
 import { loadColOrder } from './columns.js';
 import {
   readParams,
   attachMoneyFormatting,
   initCurrencyToggles,
+  initFormAccessibility,
   restoreForm,
   snapshotForm,
 } from './form.js';
@@ -38,22 +41,68 @@ const eventsListEl = document.getElementById('events-list');
 const saveSelectEl = document.getElementById('save-select');
 const saveNameEl = document.getElementById('save-name');
 const saveStatusEl = document.getElementById('save-status');
+const formErrorsEl = document.getElementById('form-errors');
 const undoBtnEl = document.getElementById('btn-undo');
 const redoBtnEl = document.getElementById('btn-redo');
 
 // ── Status flash ────────────────────────────────
 let statusTimer;
-function setStatus(msg, isError) {
+function setStatus(msg, isError, durationMs = 3000) {
   saveStatusEl.textContent = msg;
-  saveStatusEl.style.color = isError ? '#b00' : '#2a7a2a';
+  saveStatusEl.classList.toggle('status-error', Boolean(isError));
   clearTimeout(statusTimer);
-  statusTimer = setTimeout(() => { saveStatusEl.textContent = ''; }, 3000);
+  statusTimer = setTimeout(() => { saveStatusEl.textContent = ''; }, durationMs);
+}
+
+const VALIDATION_FIELD_IDS = {
+  drawdownStartFY: 'drawdownYear',
+  spUserFY: 'spUserYear',
+  spUser2FY: 'spUser2Year',
+  spSpouseFY: 'spSpouseYear',
+  houseSaleFY: 'houseSaleYear',
+  housePurchaseFY: 'housePurchaseYear',
+  'taxBands.personalAllowance': 'taxAllowance',
+  'taxBands.basicLimit': 'taxBasicLimit',
+  'taxBands.higherLimit': 'taxHigherLimit',
+  'taxBands.basicRate': 'taxBasicRate',
+  'taxBands.higherRate': 'taxHigherRate',
+  'taxBands.additionalRate': 'taxAddRate',
+  'taxBands.savingsStartBand': 'taxSavingsStartBand',
+};
+
+function showValidationErrors(errors) {
+  document.querySelectorAll('[aria-invalid="true"]').forEach(el => el.removeAttribute('aria-invalid'));
+  formErrorsEl.replaceChildren();
+  formErrorsEl.hidden = errors.length === 0;
+  if (!errors.length) return;
+
+  const heading = document.createElement('strong');
+  heading.textContent = 'Please correct the following:';
+  const list = document.createElement('ul');
+  errors.forEach(error => {
+    const item = document.createElement('li');
+    const control = document.getElementById(VALIDATION_FIELD_IDS[error.field] || error.field);
+    const label = control?.labels?.[0]?.textContent.trim() || error.field || 'Simulation';
+    item.textContent = `${label}: ${error.message}`;
+    list.appendChild(item);
+    if (control) control.setAttribute('aria-invalid', 'true');
+  });
+  formErrorsEl.append(heading, list);
+}
+
+function validatedParams() {
+  const startFY = currentFractYear();
+  const params = readParams(state.events);
+  const errors = validateParams(params, { startFY });
+  showValidationErrors(errors);
+  return errors.length ? null : { params, startFY };
 }
 
 // ── Init money formatting on existing inputs ────
 document.querySelectorAll('.money-wrap input[type=text]').forEach(attachMoneyFormatting);
 
-// ── Init currency toggles ───────────────────────
+// ── Init labels and currency toggles ─────────────
+initFormAccessibility();
 initCurrencyToggles();
 
 // ── Events list helper ──────────────────────────
@@ -127,50 +176,145 @@ document.getElementById('btn-add-event').addEventListener('click', () => {
 
 // ── Run simulation ──────────────────────────────
 function runSimulation() {
-  const p = readParams(state.events);
-  const results = simulate(p, currentFractYear());
-  renderResults(state, results, p);
+  const validated = validatedParams();
+  if (!validated) {
+    setStatus('Simulation not run: check the highlighted inputs.', true);
+    formErrorsEl.focus();
+    return false;
+  }
+
+  try {
+    const results = simulate(validated.params, validated.startFY);
+    renderResults(state, results, validated.params);
+    return true;
+  } catch (error) {
+    showValidationErrors([{ field: '', message: error?.message || 'The simulation could not be run.' }]);
+    setStatus('Simulation failed.', true);
+    return false;
+  }
 }
 
 document.getElementById('btn-run').addEventListener('click', runSimulation);
+
+// ── Find the lowest drawdown that keeps savings positive ──
+const OPTIMISE_STATUS_MS = 8000;
+
+function drawdownFailureMessage(result) {
+  const when = fmtYQ(result.shortfallFQ);
+  switch (result.reason) {
+    case 'before-drawdown':
+      return `Savings go negative in ${when}, before drawdown starts, so no drawdown rate can prevent it.`;
+    case 'no-effect':
+      return `Savings go negative in ${when} and there is no pension pot to draw from.`;
+    default:
+      return `No drawdown rate up to 100% keeps savings above zero. The best (${result.bestPercent.toFixed(1)}%) still runs out in ${when}.`;
+  }
+}
+
+document.getElementById('btn-optimise-drawdown').addEventListener('click', () => {
+  const validated = validatedParams();
+  if (!validated) {
+    setStatus('Drawdown not optimised: check the highlighted inputs.', true);
+    formErrorsEl.focus();
+    return;
+  }
+
+  const result = findMinimumDrawdown(validated.params, validated.startFY);
+  if (!result.ok) {
+    setStatus(drawdownFailureMessage(result), true, OPTIMISE_STATUS_MS);
+    return;
+  }
+
+  document.getElementById('drawdown').value = result.percent.toFixed(1);
+  paramHistory.flush(); // one undoable step
+  runSimulation();
+  setStatus(
+    result.percent === 0
+      ? 'Savings stay above zero with no drawdown, so drawdown is set to 0.0%.'
+      : `Drawdown set to ${result.percent.toFixed(1)}%, the lowest rate that keeps savings above zero.`,
+    false,
+    OPTIMISE_STATUS_MS,
+  );
+});
 
 // ── Save / Load / Delete ────────────────────────
 document.getElementById('btn-save').addEventListener('click', () => {
   const name = saveNameEl.value.trim();
   if (!name) { setStatus('Enter a scenario name first.', true); return; }
-  const p = readParams(state.events);
-  saveScenario(name, p, state.events);
-  refreshSaveSelect(saveSelectEl);
-  saveSelectEl.value = name;
-  setStatus(`Saved "${name}"`);
+  if (!validatedParams()) {
+    setStatus('Scenario not saved: check the highlighted inputs.', true);
+    formErrorsEl.focus();
+    return;
+  }
+
+  try {
+    const snapshot = snapshotForm(state.events);
+    let result = saveScenario(name, snapshot, { overwrite: false });
+    if (result?.exists || result?.error === 'already-exists') {
+      if (!confirm(`A scenario named "${name}" already exists. Overwrite it?`)) {
+        setStatus('Save cancelled.');
+        return;
+      }
+      result = saveScenario(name, snapshot, { overwrite: true });
+    }
+    if (result && result.ok === false) {
+      setStatus(result.error || 'Scenario could not be saved.', true);
+      return;
+    }
+    refreshSaveSelect(saveSelectEl);
+    saveSelectEl.value = name;
+    setStatus(`Saved "${name}"`);
+  } catch (error) {
+    setStatus(error?.message || 'Scenario could not be saved.', true);
+  }
 });
 
 document.getElementById('btn-load').addEventListener('click', () => {
   const name = saveSelectEl.value;
   if (!name) { setStatus('Select a scenario to load.', true); return; }
-  const saved = loadScenario(name);
-  if (!saved) { setStatus('Scenario not found.', true); return; }
-  restoreForm(saved, restoredEvents => {
-    state.events = restoredEvents;
-    reRenderEvents();
-  });
-  saveNameEl.value = name;
-  runSimulation();
-  paramHistory.flush(); // loading a scenario is a single undoable step
-  setStatus(`Loaded "${name}"`);
+  try {
+    const result = loadScenario(name);
+    if (!result || result.ok === false) {
+      setStatus(result?.error || 'Scenario not found.', true);
+      return;
+    }
+    const saved = result.snapshot ?? result.scenario ?? result.data ?? result.value ?? result;
+    restoreForm(saved, restoredEvents => {
+      state.events = restoredEvents;
+      reRenderEvents();
+    });
+    saveNameEl.value = name;
+    const ran = runSimulation();
+    paramHistory.flush(); // loading a scenario is a single undoable step
+    setStatus(ran ? `Loaded "${name}"` : `Loaded "${name}"; correct the highlighted inputs.`, !ran);
+  } catch (error) {
+    setStatus(error?.message || 'Scenario could not be loaded.', true);
+  }
 });
 
 document.getElementById('btn-delete').addEventListener('click', () => {
   const name = saveSelectEl.value;
   if (!name) { setStatus('Select a scenario to delete.', true); return; }
   if (!confirm(`Delete scenario "${name}"?`)) return;
-  deleteScenario(name);
-  refreshSaveSelect(saveSelectEl);
-  setStatus(`Deleted "${name}"`);
+  try {
+    const result = deleteScenario(name);
+    if (result && result.ok === false) {
+      setStatus(result.error || 'Scenario could not be deleted.', true);
+      return;
+    }
+    refreshSaveSelect(saveSelectEl);
+    setStatus(`Deleted "${name}"`);
+  } catch (error) {
+    setStatus(error?.message || 'Scenario could not be deleted.', true);
+  }
 });
 
 // ── Startup ─────────────────────────────────────
-refreshSaveSelect(saveSelectEl);
+try {
+  refreshSaveSelect(saveSelectEl);
+} catch (error) {
+  setStatus(error?.message || 'Saved scenarios could not be listed.', true);
+}
 
 // Redraw chart on resize
 window.addEventListener('resize', () => {

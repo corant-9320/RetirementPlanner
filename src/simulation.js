@@ -6,15 +6,51 @@
 import { calcTaxHousehold, proRataBands, quarterlyRate } from './utils.js';
 
 /** Zeroed cumulative tax result, used as the opening position of a tax year. */
-function zeroTax() {
-  const person = { tax: 0, taxable: 0, psaUsed: 0, bands: { basic: 0, higher: 0, additional: 0 } };
+export function zeroTax() {
+  const person = () => ({
+    tax: 0,
+    taxable: 0,
+    psaUsed: 0,
+    bands: { basic: 0, higher: 0, additional: 0 },
+  });
   return {
     total: 0,
     taxableAnnual: 0,
     psaUsed: 0,
     bands: { basic: 0, higher: 0, additional: 0 },
-    p1: person,
-    p2: { ...person },
+    p1: person(),
+    p2: person(),
+  };
+}
+
+/** Quarterly state-pension payment, uprated annually from its start value. */
+export function statePensionForQuarter(atStart, startDate, fq, annualIncrease) {
+  if (fq < startDate || atStart === 0) return 0;
+  return (atStart * Math.pow(1 + annualIncrease, fq - startDate)) / 4;
+}
+
+/** Sum cloned one-off events occurring in a quarter, converting EUR to GBP. */
+export function eventsForQuarter(events, fq, eurGbp) {
+  return events
+    .filter(event => Math.abs(event.fractYear - fq) < 0.01)
+    .reduce((sum, event) => sum + (event.currency === 'EUR' ? event.amount * eurGbp : event.amount), 0);
+}
+
+/** UK tax year containing a calendar quarter (January–March belongs to the prior year). */
+export function taxYearForQuarter(fq) {
+  const quarter = Math.round((fq - Math.floor(fq)) * 4);
+  return quarter === 0 ? Math.floor(fq) - 1 : Math.floor(fq);
+}
+
+/** Movement between two cumulative per-person tax positions. */
+export function taxPersonDelta(now, was) {
+  return {
+    taxable: now.taxable - was.taxable,
+    tax: now.tax - was.tax,
+    psaUsed: now.psaUsed - was.psaUsed,
+    basic: now.bands.basic - was.bands.basic,
+    higher: now.bands.higher - was.bands.higher,
+    additional: now.bands.additional - was.bands.additional,
   };
 }
 
@@ -25,7 +61,12 @@ function zeroTax() {
  * @returns {Array} Quarterly result objects
  */
 export function simulate(p, startFY) {
-  const END_FY = 2050.75;
+  const endFY = p.endFY == null ? 2050.75 : p.endFY;
+  if (!Number.isFinite(startFY) || !Number.isFinite(endFY) || startFY > endFY) return [];
+
+  // Work with a private snapshot so callers may safely edit their event list
+  // while a simulation result is being produced.
+  const events = (p.events || []).map(event => ({ ...event }));
   const retireFY = startFY + p.monthsWork / 12;
 
   let savingsBal = p.savings;
@@ -57,13 +98,7 @@ export function simulate(p, startFY) {
   const spUser2AtStart = p.spUser2 * Math.pow(1 + p.spIncrease, p.spUser2FY - startFY);
   const spSpouseAtStart = p.spSpouse * Math.pow(1 + p.spIncrease, p.spSpouseFY - startFY);
 
-  function stateP(atStart, startDate, fq) {
-    if (fq < startDate || atStart === 0) return 0;
-    const yearsElapsed = fq - startDate;
-    return (atStart * Math.pow(1 + p.spIncrease, yearsElapsed)) / 4;
-  }
-
-  for (let fq = startFY; fq <= END_FY + 0.001; fq += 0.25) {
+  for (let fq = startFY; fq <= endFY + 0.001; fq += 0.25) {
     fq = Math.round(fq * 4) / 4; // avoid floating-point drift
 
     const pensionStart = pensionBal;
@@ -89,9 +124,9 @@ export function simulate(p, startFY) {
     // State pensions — tracked separately so they can be attributed to the
     // correct taxpayer. spOwner = You (1) + You (2), spSpouse = Spouse.
     const spOwnerIncome =
-      stateP(spUserAtStart, p.spUserFY, fq) +
-      stateP(spUser2AtStart, p.spUser2FY, fq);
-    const spSpouseIncome = stateP(spSpouseAtStart, p.spSpouseFY, fq);
+      statePensionForQuarter(spUserAtStart, p.spUserFY, fq, p.spIncrease) +
+      statePensionForQuarter(spUser2AtStart, p.spUser2FY, fq, p.spIncrease);
+    const spSpouseIncome = statePensionForQuarter(spSpouseAtStart, p.spSpouseFY, fq, p.spIncrease);
     const statePensionIncome = spOwnerIncome + spSpouseIncome;
 
     // Interest on the opening balance. A negative balance is borrowing, so it
@@ -100,9 +135,7 @@ export function simulate(p, startFY) {
     const savingsInterest = savingsBal * (savingsBal < 0 ? qBorrow : qSavings);
 
     // One-off events in this quarter
-    const oneOff = p.events
-      .filter(e => Math.abs(e.fractYear - fq) < 0.01)
-      .reduce((s, e) => s + (e.currency === 'EUR' ? e.amount * p.eurGbp : e.amount), 0);
+    const oneOff = eventsForQuarter(events, fq, p.eurGbp);
 
     // Is the property sold in this quarter? Also clears a residual mortgage
     // when the house value is zero.
@@ -166,8 +199,7 @@ export function simulate(p, startFY) {
     const pensionIncome = statePensionIncome + taxablePensionDrawn;
 
     // UK tax year runs April–March: Q1 (Jan–Mar) belongs to the year before.
-    const qOfYear = Math.round((fq - Math.floor(fq)) * 4);
-    const tyKey = qOfYear === 0 ? Math.floor(fq) - 1 : Math.floor(fq);
+    const tyKey = taxYearForQuarter(fq);
     if (!ty || ty.key !== tyKey) {
       ty = { key: tyKey, n: 0, priv: 0, spOwn: 0, spSp: 0, sav: 0, prev: zeroTax() };
     }
@@ -199,16 +231,8 @@ export function simulate(p, startFY) {
     const taxSavingsInterest = Math.max(0, savingsInterest);
 
     // Per-person movement (for the tax tooltip)
-    const personDelta = (now, was) => ({
-      taxable: now.taxable - was.taxable,
-      tax: now.tax - was.tax,
-      psaUsed: now.psaUsed - was.psaUsed,
-      basic: now.bands.basic - was.bands.basic,
-      higher: now.bands.higher - was.bands.higher,
-      additional: now.bands.additional - was.bands.additional,
-    });
-    const taxP1 = personDelta(cum.p1, prev.p1);
-    const taxP2 = p.taxPayers >= 2 ? personDelta(cum.p2, prev.p2) : null;
+    const taxP1 = taxPersonDelta(cum.p1, prev.p1);
+    const taxP2 = p.taxPayers >= 2 ? taxPersonDelta(cum.p2, prev.p2) : null;
 
     ty.prev = cum;
 

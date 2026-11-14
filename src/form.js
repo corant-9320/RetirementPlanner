@@ -2,7 +2,7 @@
  * Form interaction layer: money formatting, currency toggles, reading params from DOM.
  */
 
-import { parseMoney, formatMoney, currentFractYear } from './utils.js';
+import { formatMoney, currentFractYear } from './utils.js';
 
 // ── Currency state ──────────────────────────────
 const fieldCurrency = {};
@@ -20,69 +20,122 @@ export function setFieldCurrency(id, cur) {
 // ── Money input formatting ──────────────────────
 export function attachMoneyFormatting(input) {
   input.addEventListener('focus', () => {
-    const raw = parseMoney(input.value);
-    input.value = raw === 0 && input.value.trim() === '' ? '' : String(raw);
+    const raw = strictMoney(input.value);
+    if (Number.isFinite(raw)) input.value = String(raw);
   });
   input.addEventListener('blur', () => {
-    const raw = parseMoney(input.value);
-    if (input.value.trim() !== '') input.value = formatMoney(raw);
+    if (input.value.trim() === '') return;
+    const raw = strictMoney(input.value);
+    if (Number.isFinite(raw)) input.value = formatMoney(raw);
   });
   input.addEventListener('input', () => {
     input.value = input.value.replace(/[^\d\-]/g, '');
   });
 }
 
-// ── Initialise all currency toggles on the page ─
+function toggleLabel(toggle, currency) {
+  const input = document.getElementById(toggle.dataset.id);
+  const fieldLabel = input?.closest('.field')?.querySelector('label')?.textContent.trim() || toggle.dataset.id || 'amount';
+  return `Use ${currency} for ${fieldLabel}`;
+}
+
+function updateToggleState(toggle, selectedCurrency) {
+  toggle.querySelectorAll('button').forEach(btn => {
+    const selected = btn.dataset.cur === selectedCurrency;
+    btn.classList.toggle('active', selected);
+    btn.setAttribute('aria-pressed', String(selected));
+  });
+}
+
+// ── Initialise labels and currency toggles ──────
+export function initFormAccessibility() {
+  let generatedId = 0;
+  document.querySelectorAll('.field > label').forEach(label => {
+    const field = label.parentElement;
+    const control = field.querySelector('input, select, textarea');
+    if (!control) return;
+    if (!control.id) control.id = `form-control-${++generatedId}`;
+    label.htmlFor = control.id;
+
+    const quarter = field.querySelector('.yq-wrap select');
+    if (quarter && !quarter.getAttribute('aria-label')) {
+      quarter.setAttribute('aria-label', `${label.textContent.trim()}, quarter`);
+    }
+  });
+}
+
 export function initCurrencyToggles() {
   document.querySelectorAll('.cur-toggle').forEach(toggle => {
     const id = toggle.dataset.id;
     const active = toggle.querySelector('button.active');
     fieldCurrency[id] = active ? active.dataset.cur : 'GBP';
+    toggle.setAttribute('role', 'group');
     toggle.querySelectorAll('button').forEach(btn => {
+      btn.type = 'button';
+      btn.setAttribute('aria-label', toggleLabel(toggle, btn.dataset.cur));
       btn.addEventListener('click', () => {
-        toggle.querySelectorAll('button').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
         fieldCurrency[id] = btn.dataset.cur;
+        updateToggleState(toggle, btn.dataset.cur);
       });
     });
+    updateToggleState(toggle, fieldCurrency[id]);
   });
 }
 
 // ── DOM readers ─────────────────────────────────
+function strictNumber(value) {
+  const text = String(value).trim();
+  if (!text) return NaN;
+  const number = Number(text);
+  return Number.isFinite(number) ? number : NaN;
+}
+
+function strictMoney(value) {
+  return strictNumber(String(value).replace(/,/g, ''));
+}
+
 function eurGbpRate() {
-  return parseFloat(document.getElementById('eurGbp').value) || 1;
+  return strictNumber(document.getElementById('eurGbp')?.value);
 }
 
 function readMoney(id) {
-  const raw = parseMoney(document.getElementById(id).value);
+  const raw = strictMoney(document.getElementById(id)?.value ?? '');
   return fieldCurrency[id] === 'EUR' ? raw * eurGbpRate() : raw;
 }
 
 function readPlain(id) {
-  return parseFloat(document.getElementById(id).value) || 0;
+  return strictNumber(document.getElementById(id)?.value ?? '');
 }
 
 function readYQ(yearId, qId) {
-  return readPlain(yearId) + parseFloat(document.getElementById(qId).value);
+  return readPlain(yearId) + strictNumber(document.getElementById(qId)?.value ?? '');
 }
 
-// ── Read all parameters from the form ───────────
-const MONEY_FIELDS = [
-  'salary', 'savings', 'pension', 'spUser', 'spUser2', 'spSpouse',
-  'mortgageRem', 'mortgagePay', 'mortgageCapital', 'houseValue',
-  'rentMonthly', 'housePurchasePrice', 'targetSpend',
-];
-const PLAIN_FIELDS = [
-  'eurGbp', 'monthsWork', 'savingsRate', 'borrowRate', 'pensionRate', 'drawdown',
-  'spIncrease', 'houseGrowth', 'spUserYear', 'spUser2Year', 'spSpouseYear',
-  'houseSaleYear', 'housePurchaseYear', 'drawdownYear',
-  'taxPayers', 'taxAllowance', 'taxBasicLimit', 'taxHigherLimit',
-  'taxBasicRate', 'taxHigherRate', 'taxAddRate', 'pensionTaxFree',
-  'taxSavingsStartBand',
-];
-const SELECT_FIELDS = [
-  'spUserQ', 'spUser2Q', 'spSpouseQ', 'houseSaleQ', 'housePurchaseQ', 'drawdownQ',
-];
+// ── Declarative form field registry ─────────────
+// Add every persisted form control here so snapshots and restore stay aligned.
+export const FIELD_SCHEMA = Object.freeze([
+  ...[
+    'salary', 'savings', 'pension', 'spUser', 'spUser2', 'spSpouse',
+    'mortgageRem', 'mortgagePay', 'mortgageCapital', 'houseValue',
+    'rentMonthly', 'housePurchasePrice', 'targetSpend',
+  ].map(id => ({ id, kind: 'money' })),
+  ...[
+    'eurGbp', 'monthsWork', 'savingsRate', 'borrowRate', 'pensionRate', 'drawdown',
+    'spIncrease', 'houseGrowth', 'spUserYear', 'spUser2Year', 'spSpouseYear',
+    'houseSaleYear', 'housePurchaseYear', 'drawdownYear',
+    'taxPayers', 'taxAllowance', 'taxBasicLimit', 'taxHigherLimit',
+    'taxBasicRate', 'taxHigherRate', 'taxAddRate', 'pensionTaxFree',
+    'taxSavingsStartBand',
+  ].map(id => ({ id, kind: 'plain' })),
+  ...[
+    'spUserQ', 'spUser2Q', 'spSpouseQ', 'houseSaleQ', 'housePurchaseQ', 'drawdownQ',
+  ].map(id => ({ id, kind: 'select' })),
+]);
+
+const fieldsOfKind = kind => FIELD_SCHEMA.filter(field => field.kind === kind).map(field => field.id);
+const MONEY_FIELDS = fieldsOfKind('money');
+const PLAIN_FIELDS = fieldsOfKind('plain');
+const SELECT_FIELDS = fieldsOfKind('select');
 
 function fieldValues(ids) {
   return Object.fromEntries(
@@ -141,8 +194,8 @@ export function readParams(events) {
     housePurchaseFY: readYQ('housePurchaseYear', 'housePurchaseQ'),
     housePurchasePrice: readMoney('housePurchasePrice'),
     targetSpend: readMoney('targetSpend'),
-    taxPayers: Math.max(1, readPlain('taxPayers') || 1),
-    pensionTaxFree: Math.min(1, Math.max(0, readPlain('pensionTaxFree') / 100)),
+    taxPayers: readPlain('taxPayers'),
+    pensionTaxFree: readPlain('pensionTaxFree') / 100,
     taxBands: {
       personalAllowance: readPlain('taxAllowance'),
       basicLimit: readPlain('taxBasicLimit'),
@@ -152,12 +205,7 @@ export function readParams(events) {
       additionalRate: readPlain('taxAddRate') / 100,
       savingsStartBand: readPlain('taxSavingsStartBand'),
     },
-    events: events.slice(),
-    // Snapshot for save/restore
-    _fieldCurrency: Object.assign({}, fieldCurrency),
-    _rawValues: fieldValues(MONEY_FIELDS),
-    _plainValues: fieldValues(PLAIN_FIELDS),
-    _selectValues: fieldValues(SELECT_FIELDS),
+    events: events.map(event => Object.assign({}, event)),
   };
 }
 
@@ -167,14 +215,16 @@ export function readParams(events) {
  * @param {Function} onEventsRestored - Callback receiving restored events array
  */
 export function restoreForm(saved, onEventsRestored) {
+  const snapshot = saved || {};
+
   // Plain inputs
-  Object.entries(saved.plainValues).forEach(([id, val]) => {
+  Object.entries(snapshot.plainValues || {}).forEach(([id, val]) => {
     const el = document.getElementById(id);
     if (el) el.value = val;
   });
 
   // Selects (quarter dropdowns)
-  Object.entries(saved.selectValues).forEach(([id, val]) => {
+  Object.entries(snapshot.selectValues || {}).forEach(([id, val]) => {
     const el = document.getElementById(id);
     if (el) {
       for (const o of el.options) {
@@ -184,22 +234,18 @@ export function restoreForm(saved, onEventsRestored) {
   });
 
   // Money values + currency toggles
-  Object.entries(saved.rawValues).forEach(([id, val]) => {
+  Object.entries(snapshot.rawValues || {}).forEach(([id, val]) => {
     const el = document.getElementById(id);
     if (el) el.value = val;
   });
-  Object.entries(saved.fieldCurrency).forEach(([id, cur]) => {
+  Object.entries(snapshot.fieldCurrency || {}).forEach(([id, cur]) => {
     fieldCurrency[id] = cur;
     const toggle = document.querySelector(`.cur-toggle[data-id="${id}"]`);
-    if (toggle) {
-      toggle.querySelectorAll('button').forEach(b => {
-        b.classList.toggle('active', b.dataset.cur === cur);
-      });
-    }
+    if (toggle) updateToggleState(toggle, cur);
   });
 
   // Events
-  const events = (saved.events || []).map(e =>
+  const events = (snapshot.events || []).map(e =>
     Object.assign({ fractYear: currentFractYear(), amount: 0, description: '', currency: 'GBP' }, e)
   );
   onEventsRestored(events);
