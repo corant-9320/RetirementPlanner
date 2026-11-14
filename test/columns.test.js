@@ -96,17 +96,25 @@ const v2Order = ['year', 'savingsEnd', 'pensionWithdrawals', 'pensionGrowth', 'p
   'totalOutgoings', 'tax', 'taxableIncome', 'livingSpend', 'housePurchase', 'rent', 'mortgage',
   'totalIncome', 'oneOff', 'savingsInterest', 'statePension', 'pensionDrawn', 'salaryIncome'];
 
-test('Rent and House Purchase are replaced by a single Other column', () => {
-  assert.ok(defaults.includes('otherOutgoings'));
-  assert.ok(!defaults.includes('rent') && !defaults.includes('housePurchase'));
-  assert.equal(defaults[defaults.indexOf('mortgage') + 1], 'otherOutgoings');
+const v3Order = v2Order.filter(k => k !== 'housePurchase').map(k => (k === 'rent' ? 'otherOutgoings' : k));
+
+test('rent and house purchase are shown in the One-offs / Other column only', () => {
+  for (const key of ['rent', 'housePurchase', 'otherOutgoings']) assert.ok(!defaults.includes(key), key);
+  assert.equal(ALL_COLUMNS.find(column => column.key === 'oneOff').label, 'One-offs / Other');
 });
 
 test('saved orders from earlier column sets keep their layout and are upgraded', () => {
-  // Rent's position becomes Other; House Purchase is dropped.
+  const withoutMerged = order => order.filter(k => !['rent', 'housePurchase', 'otherOutgoings'].includes(k));
+
+  // Other is dropped; One-offs keeps its place.
+  const fromV3 = migrateColOrder(v3Order);
+  assert.equal(isValidColOrder(fromV3), true);
+  assert.deepEqual(fromV3, withoutMerged(v3Order));
+  assert.deepEqual(loadColOrder(new MemoryStorage(JSON.stringify(v3Order))), fromV3);
+
+  // Rent and House Purchase are dropped.
   const fromV2 = migrateColOrder(v2Order);
-  assert.equal(isValidColOrder(fromV2), true);
-  assert.deepEqual(fromV2, v2Order.filter(k => k !== 'housePurchase').map(k => (k === 'rent' ? 'otherOutgoings' : k)));
+  assert.deepEqual(fromV2, withoutMerged(v2Order));
   assert.deepEqual(loadColOrder(new MemoryStorage(JSON.stringify(v2Order))), fromV2);
 
   // The oldest set also gains the pension columns straight after the pot.
@@ -114,17 +122,21 @@ test('saved orders from earlier column sets keep their layout and are upgraded',
   assert.equal(isValidColOrder(fromV1), true);
   const pot = fromV1.indexOf('pensionPot');
   assert.deepEqual(fromV1.slice(pot, pot + 3), ['pensionPot', 'pensionGrowth', 'pensionWithdrawals']);
-  assert.equal(fromV1[fromV1.indexOf('livingSpend') + 1], 'otherOutgoings');
   assert.deepEqual(loadColOrder(new MemoryStorage(JSON.stringify(v1Order))), fromV1);
 
   assert.equal(migrateColOrder(custom), null);
-  assert.equal(migrateColOrder(v2Order.slice(1)), null);
+  assert.equal(migrateColOrder(v3Order.slice(1)), null);
   assert.equal(migrateColOrder(null), null);
 });
 
-test('Other shows rent plus house purchase with a breakdown, or a dash when zero', () => {
-  const html = colCell('otherOutgoings', { rent: 3000, housePurchase: 50000, oneOff: 0, houseSale: 0 }, {});
-  assert.match(html, /£53,000/);
-  assert.match(html, /title="Rent: £3,000\nHouse purchase: £50,000"/);
-  assert.equal(colCell('otherOutgoings', { rent: 0, housePurchase: 0, oneOff: 0, houseSale: 0 }, {}), '\u2014');
+test('One-offs / Other nets receipts against rent and purchase, with a signed breakdown', () => {
+  const p = { eurGbp: 0.8, events: [{ fractYear: 2030.25, amount: 1000, description: 'Gift', currency: 'GBP' }] };
+  const row = { year: 2030, oneOff: 1000, houseSale: 300000, rent: 3000, housePurchase: 250000 };
+  const html = colCell('oneOff', row, p);
+  assert.match(html, />£48,000</);
+  assert.match(html, /title="Gift: £1,000\nHouse sale \(equity → cash\): £300,000\nRent: −£3,000\nHouse purchase: −£250,000"/);
+
+  const costOnly = colCell('oneOff', { year: 2031, oneOff: 0, houseSale: 0, rent: 6000, housePurchase: 0 }, p);
+  assert.match(costOnly, /class="neg">−£6,000/);
+  assert.equal(colCell('oneOff', { year: 2032, oneOff: 0, houseSale: 0, rent: 0, housePurchase: 0 }, p), '\u2014');
 });

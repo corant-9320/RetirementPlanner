@@ -11,10 +11,9 @@ export const ALL_COLUMNS = [
   { key: 'pensionDrawn', label: 'Pension Income', draggable: true },
   { key: 'statePension', label: 'State Pension', draggable: true },
   { key: 'savingsInterest', label: 'Savings Interest', draggable: true },
-  { key: 'oneOff', label: 'One-offs / Sale', draggable: true },
+  { key: 'oneOff', label: 'One-offs / Other', draggable: true },
   { key: 'totalIncome', label: 'Total Income', draggable: true },
   { key: 'mortgage', label: 'Mortgage', draggable: true },
-  { key: 'otherOutgoings', label: 'Other', draggable: true },
   { key: 'livingSpend', label: 'Living Spend', draggable: true },
   { key: 'taxableIncome', label: 'Taxable Income', draggable: true },
   { key: 'tax', label: 'Tax', draggable: true },
@@ -43,6 +42,9 @@ const V1_KEYS = [
   'tax', 'totalOutgoings', 'pensionPot', 'savingsEnd',
 ];
 const V2_KEYS = [...V1_KEYS.slice(0, -1), 'pensionGrowth', 'pensionWithdrawals', 'savingsEnd'];
+const V3_KEYS = V2_KEYS
+  .filter(key => key !== 'housePurchase')
+  .map(key => (key === 'rent' ? 'otherOutgoings' : key));
 const COL_ORDER_MIGRATIONS = Object.freeze([
   {
     // Pension growth/withdrawals added straight after the pension pot.
@@ -59,6 +61,11 @@ const COL_ORDER_MIGRATIONS = Object.freeze([
     upgrade: order => order
       .filter(key => key !== 'housePurchase')
       .map(key => (key === 'rent' ? 'otherOutgoings' : key)),
+  },
+  {
+    // Other merged into the One-offs column, which keeps its own place.
+    keys: V3_KEYS,
+    upgrade: order => order.filter(key => key !== 'otherOutgoings'),
   },
 ]);
 
@@ -156,8 +163,8 @@ export function orderedCols(colOrder) {
   return normalizeColOrder(colOrder).map(key => byKey.get(key));
 }
 
-/** Build tooltip for one-off events cell. */
-function oneOffTooltip(eventsInYear, houseSaleAmt, p) {
+/** Build tooltip for the one-offs / other cell: receipts positive, costs negative. */
+function oneOffTooltip(eventsInYear, r, p) {
   const lines = [];
   eventsInYear.forEach(e => {
     const amt = e.currency === 'EUR' ? e.amount * p.eurGbp : e.amount;
@@ -166,7 +173,9 @@ function oneOffTooltip(eventsInYear, houseSaleAmt, p) {
     })[char]);
     lines.push(`${label}: ${gbp(amt)}`);
   });
-  if (houseSaleAmt) lines.push(`House sale (equity \u2192 cash): ${gbp(houseSaleAmt)}`);
+  if (r.houseSale) lines.push(`House sale (equity \u2192 cash): ${gbp(r.houseSale)}`);
+  if (r.rent) lines.push(`Rent: ${gbp(-r.rent)}`);
+  if (r.housePurchase) lines.push(`House purchase: ${gbp(-r.housePurchase)}`);
   return lines.join('\n');
 }
 
@@ -201,7 +210,10 @@ function taxTooltip(r, p) {
  * Works for both annual summary rows and individual quarterly rows.
  */
 export function colCell(key, r, p) {
-  const oneOff = r.oneOff + r.houseSale;
+  // Net of one-off events and house sale (income) less rent and house
+  // purchase (outgoings), so this column spans both sides of the cash flow.
+  const oneOff = r.oneOff + r.houseSale - r.rent - r.housePurchase;
+  const hasOneOff = r.oneOff !== 0 || r.houseSale !== 0 || r.rent !== 0 || r.housePurchase !== 0;
 
   switch (key) {
     case 'year':
@@ -215,11 +227,12 @@ export function colCell(key, r, p) {
     case 'savingsInterest':
       return cell(r.savingsInterest);
     case 'oneOff': {
-      if (oneOff === 0) return '\u2014';
+      if (!hasOneOff) return '\u2014';
+      const events = p.events || [];
       const matchEvents = r.fq !== undefined
-        ? p.events.filter(e => Math.abs(e.fractYear - r.fq) < 0.01)
-        : p.events.filter(e => Math.floor(e.fractYear) === r.year);
-      const tip = oneOffTooltip(matchEvents, r.houseSale, p);
+        ? events.filter(e => Math.abs(e.fractYear - r.fq) < 0.01)
+        : events.filter(e => Math.floor(e.fractYear) === r.year);
+      const tip = oneOffTooltip(matchEvents, r, p);
       const display = cell(oneOff);
       return tip
         ? `<span class="has-tip" title="${tip.replace(/"/g, '&quot;')}">${display}</span>`
@@ -229,16 +242,6 @@ export function colCell(key, r, p) {
       return `<strong>${cell(r.totalIncome)}</strong>`;
     case 'mortgage':
       return r.mortgage > 0 ? cell(r.mortgage) : '\u2014';
-    case 'otherOutgoings': {
-      // Rent and house purchase, with the split in a tooltip.
-      const other = r.rent + r.housePurchase;
-      if (other === 0) return '\u2014';
-      const tip = [
-        r.rent ? `Rent: ${gbp(r.rent)}` : '',
-        r.housePurchase ? `House purchase: ${gbp(r.housePurchase)}` : '',
-      ].filter(Boolean).join('\n');
-      return `<span class="has-tip" title="${tip}">${cell(other)}</span>`;
-    }
     case 'livingSpend':
       return cell(r.targetSpend);
     case 'taxableIncome':
