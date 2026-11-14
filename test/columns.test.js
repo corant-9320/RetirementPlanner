@@ -10,6 +10,7 @@ import {
   loadColOrder,
   saveColOrder,
   orderedCols,
+  colCell,
 } from '../src/columns.js';
 
 class MemoryStorage {
@@ -35,9 +36,9 @@ test('order validation requires exact unique membership with year first', () => 
 });
 
 test('normalization pins year, removes invalid duplicates, and appends missing keys', () => {
-  const normalized = normalizeColOrder(['tax', 'year', 'tax', 'unknown', 'rent']);
+  const normalized = normalizeColOrder(['tax', 'year', 'tax', 'unknown', 'mortgage']);
   assert.equal(normalized[0], 'year');
-  assert.deepEqual(normalized.slice(1, 3), ['tax', 'rent']);
+  assert.deepEqual(normalized.slice(1, 3), ['tax', 'mortgage']);
   assert.equal(isValidColOrder(normalized), true);
   assert.deepEqual(normalizeColOrder(undefined), defaults);
   assert.notEqual(normalizeColOrder(undefined), normalizeColOrder(undefined));
@@ -87,16 +88,43 @@ test('orderedCols always returns one complete valid descriptor set', () => {
   assert.equal(recovered.length, ALL_COLUMNS.length);
 });
 
-test('a saved order from before the pension columns keeps its layout and gains them after the pot', () => {
-  const previous = custom.filter(key => key !== 'pensionGrowth' && key !== 'pensionWithdrawals');
-  const migrated = migrateColOrder(previous);
-  assert.equal(isValidColOrder(migrated), true);
-  const pot = migrated.indexOf('pensionPot');
-  assert.deepEqual(migrated.slice(pot, pot + 3), ['pensionPot', 'pensionGrowth', 'pensionWithdrawals']);
-  assert.deepEqual(migrated.filter(key => previous.includes(key)), previous);
-  assert.deepEqual(loadColOrder(new MemoryStorage(JSON.stringify(previous))), migrated);
+// Saved custom orders from earlier column sets (year first, rest reversed).
+const v1Order = ['year', 'savingsEnd', 'pensionPot', 'totalOutgoings', 'tax', 'taxableIncome',
+  'livingSpend', 'housePurchase', 'rent', 'mortgage', 'totalIncome', 'oneOff',
+  'savingsInterest', 'statePension', 'pensionDrawn', 'salaryIncome'];
+const v2Order = ['year', 'savingsEnd', 'pensionWithdrawals', 'pensionGrowth', 'pensionPot',
+  'totalOutgoings', 'tax', 'taxableIncome', 'livingSpend', 'housePurchase', 'rent', 'mortgage',
+  'totalIncome', 'oneOff', 'savingsInterest', 'statePension', 'pensionDrawn', 'salaryIncome'];
+
+test('Rent and House Purchase are replaced by a single Other column', () => {
+  assert.ok(defaults.includes('otherOutgoings'));
+  assert.ok(!defaults.includes('rent') && !defaults.includes('housePurchase'));
+  assert.equal(defaults[defaults.indexOf('mortgage') + 1], 'otherOutgoings');
+});
+
+test('saved orders from earlier column sets keep their layout and are upgraded', () => {
+  // Rent's position becomes Other; House Purchase is dropped.
+  const fromV2 = migrateColOrder(v2Order);
+  assert.equal(isValidColOrder(fromV2), true);
+  assert.deepEqual(fromV2, v2Order.filter(k => k !== 'housePurchase').map(k => (k === 'rent' ? 'otherOutgoings' : k)));
+  assert.deepEqual(loadColOrder(new MemoryStorage(JSON.stringify(v2Order))), fromV2);
+
+  // The oldest set also gains the pension columns straight after the pot.
+  const fromV1 = migrateColOrder(v1Order);
+  assert.equal(isValidColOrder(fromV1), true);
+  const pot = fromV1.indexOf('pensionPot');
+  assert.deepEqual(fromV1.slice(pot, pot + 3), ['pensionPot', 'pensionGrowth', 'pensionWithdrawals']);
+  assert.equal(fromV1[fromV1.indexOf('livingSpend') + 1], 'otherOutgoings');
+  assert.deepEqual(loadColOrder(new MemoryStorage(JSON.stringify(v1Order))), fromV1);
 
   assert.equal(migrateColOrder(custom), null);
-  assert.equal(migrateColOrder(previous.slice(1)), null);
+  assert.equal(migrateColOrder(v2Order.slice(1)), null);
   assert.equal(migrateColOrder(null), null);
+});
+
+test('Other shows rent plus house purchase with a breakdown, or a dash when zero', () => {
+  const html = colCell('otherOutgoings', { rent: 3000, housePurchase: 50000, oneOff: 0, houseSale: 0 }, {});
+  assert.match(html, /£53,000/);
+  assert.match(html, /title="Rent: £3,000\nHouse purchase: £50,000"/);
+  assert.equal(colCell('otherOutgoings', { rent: 0, housePurchase: 0, oneOff: 0, houseSale: 0 }, {}), '\u2014');
 });

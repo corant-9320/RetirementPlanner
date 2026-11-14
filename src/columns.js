@@ -14,8 +14,7 @@ export const ALL_COLUMNS = [
   { key: 'oneOff', label: 'One-offs / Sale', draggable: true },
   { key: 'totalIncome', label: 'Total Income', draggable: true },
   { key: 'mortgage', label: 'Mortgage', draggable: true },
-  { key: 'rent', label: 'Rent', draggable: true },
-  { key: 'housePurchase', label: 'House Purchase', draggable: true },
+  { key: 'otherOutgoings', label: 'Other', draggable: true },
   { key: 'livingSpend', label: 'Living Spend', draggable: true },
   { key: 'taxableIncome', label: 'Taxable Income', draggable: true },
   { key: 'tax', label: 'Tax', draggable: true },
@@ -30,23 +29,46 @@ export const COL_ORDER_KEY = 'retirementPlanner_colOrder';
 
 const DEFAULT_COL_ORDER = Object.freeze(ALL_COLUMNS.map(column => column.key));
 
-// Columns added after column orders were first persisted. A saved order that is
-// complete apart from these gets them inserted straight after the pension pot.
-const ADDED_COLUMNS = Object.freeze(['pensionGrowth', 'pensionWithdrawals']);
-const PREVIOUS_COL_ORDER = Object.freeze(DEFAULT_COL_ORDER.filter(key => !ADDED_COLUMNS.includes(key)));
-
 function isExactOrder(order, keys) {
   if (!Array.isArray(order) || order.length !== keys.length || order[0] !== 'year') return false;
   const seen = new Set(order);
   return seen.size === order.length && keys.every(key => seen.has(key));
 }
 
-/** Upgrade a valid pre-pension-columns order, or return null. Pure. */
+// Earlier column sets, oldest first. Each step upgrades an exact order of its
+// `keys` to the next set, keeping the user's arrangement of existing columns.
+const V1_KEYS = [
+  'year', 'salaryIncome', 'pensionDrawn', 'statePension', 'savingsInterest', 'oneOff',
+  'totalIncome', 'mortgage', 'rent', 'housePurchase', 'livingSpend', 'taxableIncome',
+  'tax', 'totalOutgoings', 'pensionPot', 'savingsEnd',
+];
+const V2_KEYS = [...V1_KEYS.slice(0, -1), 'pensionGrowth', 'pensionWithdrawals', 'savingsEnd'];
+const COL_ORDER_MIGRATIONS = Object.freeze([
+  {
+    // Pension growth/withdrawals added straight after the pension pot.
+    keys: V1_KEYS,
+    upgrade: order => {
+      const next = [...order];
+      next.splice(next.indexOf('pensionPot') + 1, 0, 'pensionGrowth', 'pensionWithdrawals');
+      return next;
+    },
+  },
+  {
+    // Rent and House Purchase merged into Other, which takes Rent's place.
+    keys: V2_KEYS,
+    upgrade: order => order
+      .filter(key => key !== 'housePurchase')
+      .map(key => (key === 'rent' ? 'otherOutgoings' : key)),
+  },
+]);
+
+/** Upgrade a valid order from an earlier column set, or return null. Pure. */
 export function migrateColOrder(order) {
-  if (!isExactOrder(order, PREVIOUS_COL_ORDER)) return null;
-  const migrated = [...order];
-  migrated.splice(migrated.indexOf('pensionPot') + 1, 0, ...ADDED_COLUMNS);
-  return migrated;
+  const start = COL_ORDER_MIGRATIONS.findIndex(step => isExactOrder(order, step.keys));
+  if (start === -1) return null;
+  let migrated = [...order];
+  for (const step of COL_ORDER_MIGRATIONS.slice(start)) migrated = step.upgrade(migrated);
+  return isValidColOrder(migrated) ? migrated : null;
 }
 
 /** Validate exact key membership, uniqueness, and the pinned year-first rule. */
@@ -207,10 +229,16 @@ export function colCell(key, r, p) {
       return `<strong>${cell(r.totalIncome)}</strong>`;
     case 'mortgage':
       return r.mortgage > 0 ? cell(r.mortgage) : '\u2014';
-    case 'rent':
-      return r.rent > 0 ? cell(r.rent) : '\u2014';
-    case 'housePurchase':
-      return r.housePurchase > 0 ? cell(r.housePurchase) : '\u2014';
+    case 'otherOutgoings': {
+      // Rent and house purchase, with the split in a tooltip.
+      const other = r.rent + r.housePurchase;
+      if (other === 0) return '\u2014';
+      const tip = [
+        r.rent ? `Rent: ${gbp(r.rent)}` : '',
+        r.housePurchase ? `House purchase: ${gbp(r.housePurchase)}` : '',
+      ].filter(Boolean).join('\n');
+      return `<span class="has-tip" title="${tip}">${cell(other)}</span>`;
+    }
     case 'livingSpend':
       return cell(r.targetSpend);
     case 'taxableIncome':
