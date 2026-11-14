@@ -95,16 +95,18 @@ const v1Order = ['year', 'savingsEnd', 'pensionPot', 'totalOutgoings', 'tax', 't
 const v2Order = ['year', 'savingsEnd', 'pensionWithdrawals', 'pensionGrowth', 'pensionPot',
   'totalOutgoings', 'tax', 'taxableIncome', 'livingSpend', 'housePurchase', 'rent', 'mortgage',
   'totalIncome', 'oneOff', 'savingsInterest', 'statePension', 'pensionDrawn', 'salaryIncome'];
-
 const v3Order = v2Order.filter(k => k !== 'housePurchase').map(k => (k === 'rent' ? 'otherOutgoings' : k));
+const preRemovalOrder = v3Order.filter(k => k !== 'otherOutgoings');
 
 test('rent and house purchase are shown in the One-offs / Other column only', () => {
   for (const key of ['rent', 'housePurchase', 'otherOutgoings']) assert.ok(!defaults.includes(key), key);
+  assert.ok(defaults.includes('pensionGrowth'));
+  assert.ok(!defaults.includes('pensionWithdrawals'));
   assert.equal(ALL_COLUMNS.find(column => column.key === 'oneOff').label, 'One-offs / Other');
 });
 
 test('saved orders from earlier column sets keep their layout and are upgraded', () => {
-  const withoutMerged = order => order.filter(k => !['rent', 'housePurchase', 'otherOutgoings'].includes(k));
+  const withoutMerged = order => order.filter(k => !['rent', 'housePurchase', 'otherOutgoings', 'pensionWithdrawals'].includes(k));
 
   // Other is dropped; One-offs keeps its place.
   const fromV3 = migrateColOrder(v3Order);
@@ -121,8 +123,19 @@ test('saved orders from earlier column sets keep their layout and are upgraded',
   const fromV1 = migrateColOrder(v1Order);
   assert.equal(isValidColOrder(fromV1), true);
   const pot = fromV1.indexOf('pensionPot');
-  assert.deepEqual(fromV1.slice(pot, pot + 3), ['pensionPot', 'pensionGrowth', 'pensionWithdrawals']);
+  assert.deepEqual(fromV1.slice(pot, pot + 2), ['pensionPot', 'pensionGrowth']);
   assert.deepEqual(loadColOrder(new MemoryStorage(JSON.stringify(v1Order))), fromV1);
+
+  // The pre-removal current order drops only Pension Withdrawals.
+  const fromPreRemoval = migrateColOrder(preRemovalOrder);
+  assert.equal(isValidColOrder(fromPreRemoval), true);
+  assert.deepEqual(fromPreRemoval, preRemovalOrder.filter(k => k !== 'pensionWithdrawals'));
+  assert.deepEqual(loadColOrder(new MemoryStorage(JSON.stringify(preRemovalOrder))), fromPreRemoval);
+
+  // Older orders also end without the retired display key.
+  const withoutRetired = order => order.filter(k => !['rent', 'housePurchase', 'otherOutgoings', 'pensionWithdrawals'].includes(k));
+  assert.deepEqual(migrateColOrder(v2Order), withoutRetired(v2Order));
+  assert.deepEqual(loadColOrder(new MemoryStorage(JSON.stringify(v2Order))), withoutRetired(v2Order));
 
   assert.equal(migrateColOrder(custom), null);
   assert.equal(migrateColOrder(v3Order.slice(1)), null);

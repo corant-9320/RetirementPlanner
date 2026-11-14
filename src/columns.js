@@ -20,7 +20,6 @@ export const ALL_COLUMNS = [
   { key: 'totalOutgoings', label: 'Total Outgoings', draggable: true },
   { key: 'pensionPot', label: 'Pension Pot (yr start)', draggable: true },
   { key: 'pensionGrowth', label: 'Pension Growth', draggable: true },
-  { key: 'pensionWithdrawals', label: 'Pension Withdrawals', draggable: true },
   { key: 'savingsEnd', label: 'Savings (yr end)', draggable: true },
 ];
 
@@ -45,6 +44,7 @@ const V2_KEYS = [...V1_KEYS.slice(0, -1), 'pensionGrowth', 'pensionWithdrawals',
 const V3_KEYS = V2_KEYS
   .filter(key => key !== 'housePurchase')
   .map(key => (key === 'rent' ? 'otherOutgoings' : key));
+const V4_KEYS = V3_KEYS.filter(key => key !== 'otherOutgoings');
 const COL_ORDER_MIGRATIONS = Object.freeze([
   {
     // Pension growth/withdrawals added straight after the pension pot.
@@ -66,6 +66,12 @@ const COL_ORDER_MIGRATIONS = Object.freeze([
     // Other merged into the One-offs column, which keeps its own place.
     keys: V3_KEYS,
     upgrade: order => order.filter(key => key !== 'otherOutgoings'),
+  },
+  {
+    // Pension withdrawals was removed as a display column; pensionDrawn remains
+    // part of the simulation and Pension Income still displays it.
+    keys: V4_KEYS,
+    upgrade: order => order.filter(key => key !== 'pensionWithdrawals'),
   },
 ]);
 
@@ -257,10 +263,6 @@ export function colCell(key, r, p) {
       return cell(r.pensionStart);
     case 'pensionGrowth':
       return r.pensionGrowth !== 0 ? cell(r.pensionGrowth) : '\u2014';
-    case 'pensionWithdrawals':
-      // Shown as an outflow (but not red) so pot + growth + withdrawals reads
-      // straight across to the next period's opening pot.
-      return r.pensionDrawn !== 0 ? gbp(-r.pensionDrawn) : '\u2014';
     case 'savingsEnd':
       return `<strong>${cell(r.savingsEnd)}</strong>`;
     default:
