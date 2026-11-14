@@ -6,7 +6,8 @@ function validParams() {
   return {
     eurGbp: 0.85, salary: 40000, monthsWork: 12, savings: 10000,
     savingsRate: 0.03, borrowRate: 0.08, pension: 200000,
-    pensionRate: 0.04, drawdown: 0.04, drawdownStartFY: 2030,
+    pensionRate: 0.04,
+    drawdowns: [{ startFY: 2030, rate: 0.04 }, { startFY: 2040.5, rate: 0.06 }],
     spUser: 10000, spUserFY: 2035, spUser2: 0, spUser2FY: 2035.25,
     spSpouse: 9000, spSpouseFY: 2036, spIncrease: 0.025,
     houseValue: 300000, houseGrowth: 0.02, mortgageRem: 50000,
@@ -30,24 +31,25 @@ test('valid complete parameters have no errors', () => {
 test('finite values, taxpayer count, rates, money, and mortgage are checked', () => {
   const params = validParams();
   Object.assign(params, { salary: NaN, savings: -100, pension: -1, taxPayers: 3,
-    savingsRate: -1.01, drawdown: 1.01, mortgageCapital: 13000 });
+    savingsRate: -1.01, mortgageCapital: 13000 });
+  params.drawdowns[1].rate = 1.01;
   const result = fields(validateParams(params, { startFY: 2026 }));
   assert.ok(result.includes('salary'));
   assert.ok(!result.includes('savings'));
-  for (const field of ['pension', 'taxPayers', 'savingsRate', 'drawdown', 'mortgageCapital']) {
+  for (const field of ['pension', 'taxPayers', 'savingsRate', 'drawdowns[1].rate', 'mortgageCapital']) {
     assert.ok(result.includes(field), field);
   }
 });
 
 test('tax bands, quarter dates, and horizon ordering are checked', () => {
   const params = validParams();
-  params.drawdownStartFY = 2030.1;
+  params.drawdowns[0].startFY = 2030.1;
   params.endFY = 2025.75;
   params.taxBands.personalAllowance = 60000;
   params.taxBands.higherLimit = 40000;
   params.taxBands.basicRate = 1.2;
   const result = fields(validateParams(params, { startFY: 2026 }));
-  for (const field of ['drawdownStartFY', 'endFY', 'taxBands.basicLimit',
+  for (const field of ['drawdowns[0].startFY', 'endFY', 'taxBands.basicLimit',
     'taxBands.higherLimit', 'taxBands.basicRate']) assert.ok(result.includes(field), field);
 
   const singleQuarter = validParams();
@@ -79,4 +81,26 @@ test('missing objects and numeric values produce errors rather than throwing', (
   assert.ok(result.includes('taxBands'));
   assert.ok(result.includes('events'));
   assert.deepEqual(validateParams(null), [{ field: 'params', message: 'must be an object' }]);
+});
+
+test('drawdown lines need finite quarter dates, distinct starts, and rates in 0–1', () => {
+  const empty = validParams();
+  empty.drawdowns = [];
+  assert.deepEqual(validateParams(empty, { startFY: 2026 }), []);
+
+  const params = validParams();
+  params.drawdowns = [
+    { startFY: 2030, rate: 0.04 },
+    { startFY: NaN, rate: -0.01 },
+    { startFY: 2030, rate: NaN },
+    null,
+  ];
+  const result = fields(validateParams(params, { startFY: 2026 }));
+  for (const field of ['drawdowns[1].startFY', 'drawdowns[1].rate', 'drawdowns[2].startFY',
+    'drawdowns[2].rate', 'drawdowns[3]']) assert.ok(result.includes(field), field);
+  assert.ok(!result.includes('drawdowns[0].startFY'));
+
+  const missing = validParams();
+  delete missing.drawdowns;
+  assert.ok(fields(validateParams(missing)).includes('drawdowns'));
 });

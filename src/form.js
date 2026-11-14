@@ -120,17 +120,34 @@ export const FIELD_SCHEMA = Object.freeze([
     'rentMonthly', 'housePurchasePrice', 'targetSpend',
   ].map(id => ({ id, kind: 'money' })),
   ...[
-    'eurGbp', 'monthsWork', 'savingsRate', 'borrowRate', 'pensionRate', 'drawdown',
+    'eurGbp', 'monthsWork', 'savingsRate', 'borrowRate', 'pensionRate',
     'spIncrease', 'houseGrowth', 'spUserYear', 'spUser2Year', 'spSpouseYear',
-    'houseSaleYear', 'housePurchaseYear', 'drawdownYear',
+    'houseSaleYear', 'housePurchaseYear',
     'taxPayers', 'taxAllowance', 'taxBasicLimit', 'taxHigherLimit',
     'taxBasicRate', 'taxHigherRate', 'taxAddRate', 'pensionTaxFree',
     'taxSavingsStartBand',
   ].map(id => ({ id, kind: 'plain' })),
   ...[
-    'spUserQ', 'spUser2Q', 'spSpouseQ', 'houseSaleQ', 'housePurchaseQ', 'drawdownQ',
+    'spUserQ', 'spUser2Q', 'spSpouseQ', 'houseSaleQ', 'housePurchaseQ',
   ].map(id => ({ id, kind: 'select' })),
 ]);
+
+/** Detached copy of raw drawdown-line UI values. */
+export function cloneDrawdownLines(lines) {
+  return (lines || []).map(line => ({
+    year: String(line.year ?? ''),
+    quarter: String(line.quarter ?? '0'),
+    rate: String(line.rate ?? ''),
+  }));
+}
+
+/** Convert raw drawdown-line UI values to domain lines ({startFY, rate}). */
+export function drawdownParams(lines) {
+  return cloneDrawdownLines(lines).map(line => ({
+    startFY: strictNumber(line.year) + strictNumber(line.quarter),
+    rate: strictNumber(line.rate) / 100,
+  }));
+}
 
 const fieldsOfKind = kind => FIELD_SCHEMA.filter(field => field.kind === kind).map(field => field.id);
 const MONEY_FIELDS = fieldsOfKind('money');
@@ -150,22 +167,25 @@ function fieldValues(ids) {
  * Capture the full form state as a plain, JSON-serialisable snapshot.
  * Uses the same shape as saved scenarios, so restoreForm() can apply it directly.
  * @param {Array} events - Current one-off events array
+ * @param {Array} drawdowns - Current raw drawdown lines ({year, quarter, rate} strings)
  */
-export function snapshotForm(events) {
+export function snapshotForm(events, drawdowns) {
   return {
     fieldCurrency: Object.assign({}, fieldCurrency),
     rawValues: fieldValues(MONEY_FIELDS),
     plainValues: fieldValues(PLAIN_FIELDS),
     selectValues: fieldValues(SELECT_FIELDS),
     events: events.map(e => Object.assign({}, e)),
+    drawdowns: cloneDrawdownLines(drawdowns),
   };
 }
 
 /**
  * Read all form parameters into a plain object suitable for simulate().
  * @param {Array} events - Current one-off events array
+ * @param {Array} drawdowns - Current raw drawdown lines
  */
-export function readParams(events) {
+export function readParams(events, drawdowns) {
   return {
     eurGbp: eurGbpRate(),
     salary: readMoney('salary'),
@@ -175,8 +195,7 @@ export function readParams(events) {
     borrowRate: readPlain('borrowRate') / 100,
     pension: readMoney('pension'),
     pensionRate: readPlain('pensionRate') / 100,
-    drawdown: readPlain('drawdown') / 100,
-    drawdownStartFY: readYQ('drawdownYear', 'drawdownQ'),
+    drawdowns: drawdownParams(drawdowns),
     spUser: readMoney('spUser'),
     spUserFY: readYQ('spUserYear', 'spUserQ'),
     spUser2: readMoney('spUser2'),
@@ -212,7 +231,7 @@ export function readParams(events) {
 /**
  * Restore form state from a saved scenario object.
  * @param {object} saved - The scenario data from storage
- * @param {Function} onEventsRestored - Callback receiving restored events array
+ * @param {Function} onEventsRestored - Callback receiving (events, drawdowns) arrays
  */
 export function restoreForm(saved, onEventsRestored) {
   const snapshot = saved || {};
@@ -248,5 +267,5 @@ export function restoreForm(saved, onEventsRestored) {
   const events = (snapshot.events || []).map(e =>
     Object.assign({ fractYear: currentFractYear(), amount: 0, description: '', currency: 'GBP' }, e)
   );
-  onEventsRestored(events);
+  onEventsRestored(events, cloneDrawdownLines(snapshot.drawdowns));
 }

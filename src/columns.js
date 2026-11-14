@@ -21,6 +21,8 @@ export const ALL_COLUMNS = [
   { key: 'tax', label: 'Tax', draggable: true },
   { key: 'totalOutgoings', label: 'Total Outgoings', draggable: true },
   { key: 'pensionPot', label: 'Pension Pot (yr start)', draggable: true },
+  { key: 'pensionGrowth', label: 'Pension Growth', draggable: true },
+  { key: 'pensionWithdrawals', label: 'Pension Withdrawals', draggable: true },
   { key: 'savingsEnd', label: 'Savings (yr end)', draggable: true },
 ];
 
@@ -28,13 +30,28 @@ export const COL_ORDER_KEY = 'retirementPlanner_colOrder';
 
 const DEFAULT_COL_ORDER = Object.freeze(ALL_COLUMNS.map(column => column.key));
 
+// Columns added after column orders were first persisted. A saved order that is
+// complete apart from these gets them inserted straight after the pension pot.
+const ADDED_COLUMNS = Object.freeze(['pensionGrowth', 'pensionWithdrawals']);
+const PREVIOUS_COL_ORDER = Object.freeze(DEFAULT_COL_ORDER.filter(key => !ADDED_COLUMNS.includes(key)));
+
+function isExactOrder(order, keys) {
+  if (!Array.isArray(order) || order.length !== keys.length || order[0] !== 'year') return false;
+  const seen = new Set(order);
+  return seen.size === order.length && keys.every(key => seen.has(key));
+}
+
+/** Upgrade a valid pre-pension-columns order, or return null. Pure. */
+export function migrateColOrder(order) {
+  if (!isExactOrder(order, PREVIOUS_COL_ORDER)) return null;
+  const migrated = [...order];
+  migrated.splice(migrated.indexOf('pensionPot') + 1, 0, ...ADDED_COLUMNS);
+  return migrated;
+}
+
 /** Validate exact key membership, uniqueness, and the pinned year-first rule. */
 export function isValidColOrder(order) {
-  if (!Array.isArray(order) || order.length !== DEFAULT_COL_ORDER.length || order[0] !== 'year') {
-    return false;
-  }
-  const keys = new Set(order);
-  return keys.size === order.length && DEFAULT_COL_ORDER.every(key => keys.has(key));
+  return isExactOrder(order, DEFAULT_COL_ORDER);
 }
 
 export const validateColOrder = isValidColOrder;
@@ -73,7 +90,8 @@ export function loadColOrder(storage) {
   if (!target || typeof target.getItem !== 'function') return [...DEFAULT_COL_ORDER];
   try {
     const saved = JSON.parse(target.getItem(COL_ORDER_KEY));
-    return isValidColOrder(saved) ? [...saved] : [...DEFAULT_COL_ORDER];
+    if (isValidColOrder(saved)) return [...saved];
+    return migrateColOrder(saved) || [...DEFAULT_COL_ORDER];
   } catch {
     return [...DEFAULT_COL_ORDER];
   }
@@ -189,6 +207,12 @@ export function colCell(key, r, p) {
       return `<strong>${cell(r.totalOutgoings)}</strong>`;
     case 'pensionPot':
       return cell(r.pensionStart);
+    case 'pensionGrowth':
+      return r.pensionGrowth !== 0 ? cell(r.pensionGrowth) : '\u2014';
+    case 'pensionWithdrawals':
+      // Shown as an outflow (but not red) so pot + growth + withdrawals reads
+      // straight across to the next period's opening pot.
+      return r.pensionDrawn !== 0 ? gbp(-r.pensionDrawn) : '\u2014';
     case 'savingsEnd':
       return `<strong>${cell(r.savingsEnd)}</strong>`;
     default:

@@ -2,7 +2,7 @@
 /** @typedef {import('./contracts.js').AnnualResult} AnnualResult */
 
 const SUM_FIELDS = [
-  'salaryIncome', 'pensionDrawn', 'statePensionIncome', 'savingsInterest',
+  'salaryIncome', 'pensionGrowth', 'pensionDrawn', 'statePensionIncome', 'savingsInterest',
   'oneOff', 'houseSale', 'totalIncome', 'mortgage', 'rent', 'housePurchase',
   'targetSpend', 'taxableIncome', 'tax', 'taxPensionIncome',
   'taxSavingsInterest', 'taxPsaUsed', 'taxBasic', 'taxHigher',

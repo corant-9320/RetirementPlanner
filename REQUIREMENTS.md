@@ -8,7 +8,7 @@ The browser is the only runtime dependency. There is no backend, login, account 
 
 ## Inputs
 
-The planner accepts an EUR→GBP exchange rate; net annual salary and remaining work months; savings, real savings/borrowing rates; private pension balance, real return, drawdown rate/date, and tax-free drawdown percentage; up to three state-pension streams and a real increase rate; property value/growth, mortgage balance/payment/capital repayment, sale timing, rent, and replacement purchase; target living spend; configurable UK tax assumptions; and dated positive or negative one-off events.
+The planner accepts an EUR→GBP exchange rate; net annual salary and remaining work months; savings, real savings/borrowing rates; private pension balance, real return, a list of drawdown lines (each a start quarter and annual rate), and tax-free drawdown percentage; up to three state-pension streams and a real increase rate; property value/growth, mortgage balance/payment/capital repayment, sale timing, rent, and replacement purchase; target living spend; configurable UK tax assumptions; and dated positive or negative one-off events.
 
 Currency-toggle values and EUR events are converted to GBP when parameters are read. The simulation then operates entirely in GBP.
 
@@ -16,6 +16,7 @@ Currency-toggle values and EUR events are converted to GBP when parameters are r
 
 - `simulate(params, startFY)` is pure: identical parameters and fractional-year start produce identical quarterly results.
 - Annual rates use equivalent quarterly compounding, not annual-rate ÷ 4. Pension drawdown and target spend use annual amount/rate ÷ 4.
+- Drawdown lines are applied in date order: each rate applies from its start quarter until the next line starts. There is no drawdown before the earliest line, a 0% line pauses drawdown, and two lines may not start in the same quarter. Each quarter's pension growth and drawdown are both based on the opening pot, so `closing pot = opening pot + growth − withdrawals`.
 - Salary is already net of tax, is paid quarterly, and is prorated in the final working quarter.
 - Savings interest is based on the opening balance. Negative savings accrue the configured borrowing rate.
 - State-pension input amounts are uprated from the projection start to their start dates and thereafter; payments begin in the selected quarter.
@@ -34,9 +35,11 @@ Net salary, one-off events, property proceeds, and savings principal are not tax
 
 The result is a quarterly series rendered as calendar-year summaries expandable to quarters, a reorderable table, negative-savings warnings, and a stacked savings/pension/housing-equity chart. Annual income/outgoing/tax figures are sums of displayed quarters; annual opening/closing balances come from the first/last available quarter.
 
-The "Find lowest" button beside the drawdown rate scans 0–100% in 0.1% steps, holding every other input (including the drawdown start date) fixed, and sets the lowest rate at which savings never close a quarter below zero. A higher rate does not always leave more savings later (the pot empties sooner and income can move into higher bands), so the search is a full upward scan rather than a bisection. Pension left at the end of the projection is not taxed or valued. When no rate works, the planner says whether the shortfall falls before drawdown starts, there is no pot, or even the longest-lasting rate runs out, and leaves the field unchanged. Setting the rate is one undoable step and re-runs the simulation.
+The table includes Pension Growth and Pension Withdrawals columns (withdrawals shown as an outflow) beside the opening pension pot, so each year's change in the pot can be read across. A column order saved before these columns existed keeps its layout and gains them after the pension pot.
 
-Named scenarios and column order persist only in the current browser's `localStorage`. Saving does not sync or transmit data. Undo/redo is in-memory, snapshot-based, capped at 100 steps, and resets on reload.
+The "Find lowest" button on each drawdown line scans 0–100% in 0.1% steps for that line, holding every other input (including that line's start date and the other lines' rates) fixed, and sets the lowest rate at which savings never close a quarter below zero. A higher rate does not always leave more savings later (the pot empties sooner and income can move into higher bands), so the search is a full upward scan rather than a bisection. Pension left at the end of the projection is not taxed or valued. When no rate works, the planner says whether the shortfall falls before that line starts, there is no pot, or even the longest-lasting rate runs out, and leaves the field unchanged. Setting the rate is one undoable step and re-runs the simulation.
+
+Named scenarios and column order persist only in the current browser's `localStorage`. Saving does not sync or transmit data. Scenario storage is schema v2; v1 documents and the unversioned legacy map are migrated on read, turning the single drawdown start/rate into a one-line drawdown list, and are rewritten as v2 on the next save. Undo/redo is in-memory, snapshot-based, capped at 100 steps, and resets on reload.
 
 ## Acceptance expectations
 

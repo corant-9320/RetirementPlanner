@@ -42,6 +42,26 @@ export function taxYearForQuarter(fq) {
   return quarter === 0 ? Math.floor(fq) - 1 : Math.floor(fq);
 }
 
+/**
+ * Sort drawdown lines by start date into a detached schedule. Each line's rate
+ * applies from its start quarter until the next line starts.
+ */
+export function drawdownSchedule(drawdowns) {
+  return (drawdowns || [])
+    .map(line => ({ startFY: line.startFY, rate: line.rate }))
+    .sort((a, b) => a.startFY - b.startFY);
+}
+
+/** Annual drawdown rate in force in a quarter: the latest line started on or before it, else 0. */
+export function drawdownRateAt(schedule, fq) {
+  let rate = 0;
+  for (const line of schedule) {
+    if (line.startFY > fq + 1e-9) break;
+    rate = line.rate;
+  }
+  return rate;
+}
+
 /** Movement between two cumulative per-person tax positions. */
 export function taxPersonDelta(now, was) {
   return {
@@ -67,6 +87,7 @@ export function simulate(p, startFY) {
   // Work with a private snapshot so callers may safely edit their event list
   // while a simulation result is being produced.
   const events = (p.events || []).map(event => ({ ...event }));
+  const schedule = drawdownSchedule(p.drawdowns);
   const retireFY = startFY + p.monthsWork / 12;
 
   let savingsBal = p.savings;
@@ -103,14 +124,11 @@ export function simulate(p, startFY) {
 
     const pensionStart = pensionBal;
 
-    // Pension growth + drawdown (quarterly)
-    let pensionDrawn = 0;
-    if (fq >= p.drawdownStartFY) {
-      pensionDrawn = pensionBal * (p.drawdown / 4);
-      pensionBal = pensionBal * (1 + qPension) - pensionDrawn;
-    } else {
-      pensionBal = pensionBal * (1 + qPension);
-    }
+    // Pension growth + drawdown (quarterly), both on the opening balance, so
+    // pensionEnd === pensionStart + pensionGrowth − pensionDrawn.
+    const pensionGrowth = pensionBal * qPension;
+    const pensionDrawn = pensionBal * (drawdownRateAt(schedule, fq) / 4);
+    pensionBal = pensionBal + pensionGrowth - pensionDrawn;
 
     // Salary (pro-rated in the retirement quarter)
     let salaryIncome = 0;
@@ -250,6 +268,7 @@ export function simulate(p, startFY) {
       year: Math.floor(fq),
       quarter: Math.round((fq - Math.floor(fq)) * 4),
       salaryIncome,
+      pensionGrowth,
       pensionDrawn,
       statePensionIncome,
       spOwnerIncome,

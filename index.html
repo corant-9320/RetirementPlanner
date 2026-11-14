@@ -207,14 +207,10 @@
             <input class="plain" type="number" id="pensionRate" step="0.1" value="4.0" />
           </div>
         </div>
-        <div class="row">
-          <div class="field"><label>Drawdown start (year + quarter)</label>
-            <div class="yq-wrap"><input class="plain" type="number" id="drawdownYear" value="2045" /><select id="drawdownQ"><option value="0">Q1</option><option value="0.25">Q2</option><option value="0.5">Q3</option><option value="0.75">Q4</option></select></div>
-          </div>
-          <div class="field"><label>Annual drawdown %</label>
-            <div class="input-action"><input class="plain" type="number" id="drawdown" step="0.1" value="5.0" /><button class="btn-sm" id="btn-optimise-drawdown" type="button" title="Set the lowest drawdown % that keeps savings from going negative">Find lowest</button></div>
-          </div>
-        </div>
+        <div class="drawdown-head" aria-hidden="true"><span>Drawdown from (year + quarter)</span><span>Annual drawdown %</span><span></span></div>
+        <div id="drawdowns-list"></div>
+        <button class="btn-sm" id="btn-add-drawdown" type="button">＋ Add drawdown line</button>
+        <p class="drawdown-note">Each rate applies from its start until the next line starts. No drawdown before the earliest line; use 0% to pause.</p>
       </div>
 
       <!-- State Pension — You (1) -->

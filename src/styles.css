@@ -62,6 +62,10 @@ input.plain:focus { outline: none; border-color: #1a6eb5; background: #fff; box-
 
 /* ── One-off events ── */
 .event-row { display: grid; grid-template-columns: 112px 1fr 112px 24px; gap: 4px; margin-bottom: 4px; align-items: center; }
+/* ── Drawdown lines ── */
+.drawdown-row, .drawdown-head { display: grid; grid-template-columns: 1fr 1fr 24px; gap: 4px; margin-bottom: 4px; align-items: center; }
+.drawdown-head { font-size: 10px; color: #666; margin-top: 4px; }
+.drawdown-note { font-size: 10px; color: #777; margin: 4px 0 0; }
 .btn-sm { background: none; border: 1px solid #ccc; border-radius: 3px; cursor: pointer; font-size: 10px; padding: 3px 6px; color: #555; }
 .btn-sm:hover { background: #f0f0f0; }
 .input-action { display: flex; gap: 4px; }

@@ -1,12 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { simulate, eventsForQuarter, statePensionForQuarter, taxYearForQuarter } from '../src/simulation.js';
+import {
+  simulate, eventsForQuarter, statePensionForQuarter, taxYearForQuarter,
+  drawdownSchedule, drawdownRateAt,
+} from '../src/simulation.js';
+import { aggregateAnnual } from '../src/annual.js';
 
 function params(overrides = {}) {
   return {
     eurGbp: 0.8, salary: 0, monthsWork: 0, savings: 0, savingsRate: 0,
-    borrowRate: 0, pension: 0, pensionRate: 0, drawdown: 0,
-    drawdownStartFY: 2100, spUser: 0, spUserFY: 2100, spUser2: 0,
+    borrowRate: 0, pension: 0, pensionRate: 0, drawdowns: [], spUser: 0, spUserFY: 2100, spUser2: 0,
     spUser2FY: 2100, spSpouse: 0, spSpouseFY: 2100, spIncrease: 0,
     houseValue: 0, houseGrowth: 0, mortgageRem: 0, mortgagePay: 0,
     mortgageCapital: 0, houseSaleFY: 2100, rentMonthly: 0,
@@ -89,8 +92,8 @@ test('pension drawdown is taxed cumulatively in its starting quarter', () => {
   const taxBands = { personalAllowance: 0, basicLimit: 100000,
     higherLimit: 200000, basicRate: 0.2, higherRate: 0.4,
     additionalRate: 0.45, savingsStartBand: 0 };
-  const [result] = simulate(params({ pension: 40000, drawdown: 1,
-    drawdownStartFY: 2026, taxBands, endFY: 2026 }), 2026);
+  const [result] = simulate(params({ pension: 40000,
+    drawdowns: [{ startFY: 2026, rate: 1 }], taxBands, endFY: 2026 }), 2026);
   assert.equal(result.pensionDrawn, 10000);
   assert.equal(result.taxPensionIncome, 10000);
   assert.equal(result.tax, 2000);
@@ -105,4 +108,47 @@ test('state pension and UK tax-year helpers respect quarter boundaries', () => {
   assert.equal(taxYearForQuarter(2026), 2025);
   assert.equal(taxYearForQuarter(2026.25), 2026);
   assert.equal(taxYearForQuarter(2026.75), 2026);
+});
+
+test('drawdown lines apply from their start until the next line, in date order', () => {
+  const lines = [
+    { startFY: 2027, rate: 0 },
+    { startFY: 2026.25, rate: 0.08 },
+    { startFY: 2027.5, rate: 0.04 },
+  ];
+  const snapshot = structuredClone(lines);
+  const schedule = drawdownSchedule(lines);
+  assert.deepEqual(schedule.map(line => line.startFY), [2026.25, 2027, 2027.5]);
+  assert.equal(drawdownRateAt(schedule, 2026), 0);
+  assert.equal(drawdownRateAt(schedule, 2026.25), 0.08);
+  assert.equal(drawdownRateAt(schedule, 2026.75), 0.08);
+  assert.equal(drawdownRateAt(schedule, 2027.25), 0);
+  assert.equal(drawdownRateAt(schedule, 2027.5), 0.04);
+  assert.equal(drawdownRateAt(schedule, 2040), 0.04);
+  assert.equal(drawdownRateAt([], 2030), 0);
+
+  const results = simulate(params({ pension: 100000, drawdowns: lines, endFY: 2027.75 }), 2026);
+  assert.deepEqual(lines, snapshot);
+  for (const result of results) {
+    close(result.pensionDrawn, result.pensionStart * drawdownRateAt(schedule, result.fq) / 4);
+  }
+  assert.equal(results[0].pensionDrawn, 0);
+  assert.equal(results[4].pensionDrawn, 0);
+  assert.ok(results[1].pensionDrawn > 0 && results[6].pensionDrawn > 0);
+});
+
+test('pension growth and withdrawals explain every change in the pot', () => {
+  const results = simulate(params({ pension: 200000, pensionRate: 0.05,
+    drawdowns: [{ startFY: 2026.5, rate: 0.06 }], endFY: 2028.75 }), 2026);
+  for (const result of results) {
+    close(result.pensionGrowth, result.pensionStart * (1.05 ** 0.25 - 1), 1e-6);
+    close(result.pensionEnd, result.pensionStart + result.pensionGrowth - result.pensionDrawn, 1e-6);
+  }
+  const annual = aggregateAnnual(results);
+  for (let i = 0; i < annual.length; i++) {
+    const year = annual[i];
+    close(year.pensionGrowth, year.quarters.reduce((sum, q) => sum + q.pensionGrowth, 0));
+    close(year.pensionEnd, year.pensionStart + year.pensionGrowth - year.pensionDrawn, 1e-6);
+    if (i > 0) close(year.pensionStart, annual[i - 1].pensionEnd);
+  }
 });

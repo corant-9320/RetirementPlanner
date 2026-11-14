@@ -6,6 +6,7 @@ import {
   isValidColOrder,
   validateColOrder,
   normalizeColOrder,
+  migrateColOrder,
   loadColOrder,
   saveColOrder,
   orderedCols,
@@ -84,4 +85,18 @@ test('orderedCols always returns one complete valid descriptor set', () => {
   assert.equal(recovered[0], 'year');
   assert.equal(new Set(recovered).size, ALL_COLUMNS.length);
   assert.equal(recovered.length, ALL_COLUMNS.length);
+});
+
+test('a saved order from before the pension columns keeps its layout and gains them after the pot', () => {
+  const previous = custom.filter(key => key !== 'pensionGrowth' && key !== 'pensionWithdrawals');
+  const migrated = migrateColOrder(previous);
+  assert.equal(isValidColOrder(migrated), true);
+  const pot = migrated.indexOf('pensionPot');
+  assert.deepEqual(migrated.slice(pot, pot + 3), ['pensionPot', 'pensionGrowth', 'pensionWithdrawals']);
+  assert.deepEqual(migrated.filter(key => previous.includes(key)), previous);
+  assert.deepEqual(loadColOrder(new MemoryStorage(JSON.stringify(previous))), migrated);
+
+  assert.equal(migrateColOrder(custom), null);
+  assert.equal(migrateColOrder(previous.slice(1)), null);
+  assert.equal(migrateColOrder(null), null);
 });

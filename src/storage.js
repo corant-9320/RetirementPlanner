@@ -1,7 +1,13 @@
 /** Scenario persistence with a versioned, JSON-only localStorage schema. */
 
 export const STORAGE_KEY = 'retirementPlanner_saves';
-export const STORAGE_SCHEMA_VERSION = 1;
+export const STORAGE_SCHEMA_VERSION = 2;
+
+/**
+ * Values shown by the original single drawdown fields in index.html. Used when
+ * a v1 snapshot predates one of those fields, matching what restore displayed.
+ */
+const V1_DRAWDOWN_DEFAULTS = Object.freeze({ year: '2045', quarter: '0', rate: '5.0' });
 
 export function isRecord(value) {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) return false;
@@ -29,8 +35,15 @@ function isEvent(value) {
     (value.currency === 'GBP' || value.currency === 'EUR');
 }
 
-/** Validate the serialisable shape returned by snapshotForm(). */
-export function validateFormSnapshot(value) {
+function isDrawdownLine(value) {
+  return isRecord(value) &&
+    typeof value.year === 'string' &&
+    typeof value.quarter === 'string' &&
+    typeof value.rate === 'string';
+}
+
+/** Schema-v1 snapshot: no drawdown list; one drawdown held in plain/select values. */
+function validateFormSnapshotV1(value) {
   try {
     return isRecord(value) &&
       isCurrencyRecord(value.fieldCurrency) &&
@@ -38,6 +51,16 @@ export function validateFormSnapshot(value) {
       isStringRecord(value.plainValues) &&
       isStringRecord(value.selectValues) &&
       Array.isArray(value.events) && value.events.every(isEvent);
+  } catch {
+    return false;
+  }
+}
+
+/** Validate the serialisable shape returned by snapshotForm(). */
+export function validateFormSnapshot(value) {
+  try {
+    return validateFormSnapshotV1(value) &&
+      Array.isArray(value.drawdowns) && value.drawdowns.every(isDrawdownLine);
   } catch {
     return false;
   }
@@ -54,11 +77,40 @@ export function cloneFormSnapshot(value) {
     plainValues: { ...value.plainValues },
     selectValues: { ...value.selectValues },
     events: value.events.map(event => ({ ...event })),
+    drawdowns: value.drawdowns.map(line => ({ year: line.year, quarter: line.quarter, rate: line.rate })),
   };
 }
 
-function cloneScenario(value) {
-  const snapshot = cloneFormSnapshot(value);
+/**
+ * Convert a schema-v1 snapshot (single drawdownYear/drawdownQ/drawdown fields)
+ * into the current shape with a one-line drawdown list. Pure; returns a
+ * detached value, or null when the input is not a valid v1 snapshot. Any
+ * savedAt is carried over unchanged.
+ */
+export function migrateSnapshotV1(value) {
+  if (!validateFormSnapshotV1(value)) return null;
+  const { drawdownYear, drawdown, ...plainValues } = value.plainValues;
+  const { drawdownQ, ...selectValues } = value.selectValues;
+  const migrated = {
+    fieldCurrency: { ...value.fieldCurrency },
+    rawValues: { ...value.rawValues },
+    plainValues,
+    selectValues,
+    events: value.events.map(event => ({ ...event })),
+    drawdowns: [{
+      year: drawdownYear ?? V1_DRAWDOWN_DEFAULTS.year,
+      quarter: drawdownQ ?? V1_DRAWDOWN_DEFAULTS.quarter,
+      rate: drawdown ?? V1_DRAWDOWN_DEFAULTS.rate,
+    }],
+  };
+  if (Object.hasOwn(value, 'savedAt')) migrated.savedAt = value.savedAt;
+  return migrated;
+}
+
+function cloneScenario(value, sourceVersion = STORAGE_SCHEMA_VERSION) {
+  const current = sourceVersion === STORAGE_SCHEMA_VERSION ? value : migrateSnapshotV1(value);
+  if (!current) return null;
+  const snapshot = cloneFormSnapshot(current);
   if (!snapshot) return null;
   if (Object.hasOwn(value, 'savedAt')) {
     if (typeof value.savedAt !== 'string') return null;
@@ -68,21 +120,28 @@ function cloneScenario(value) {
 }
 
 /**
- * Convert either the legacy root scenario map or a v1 document to schema v1.
- * This helper is pure and returns null rather than throwing for malformed data.
+ * Convert the legacy root scenario map (unversioned, v1 snapshot shape), a v1
+ * document, or a v2 document to the current schema. This helper is pure and
+ * returns null rather than throwing for malformed data.
  */
 export function migrateStorage(value) {
   try {
     if (!isRecord(value)) return null;
-    const source = value.version === STORAGE_SCHEMA_VERSION
-      ? value.scenarios
-      : (!Object.hasOwn(value, 'version') ? value : null);
+    let source = null;
+    let sourceVersion = null;
+    if (!Object.hasOwn(value, 'version')) {
+      source = value;
+      sourceVersion = 1;
+    } else if (value.version === 1 || value.version === STORAGE_SCHEMA_VERSION) {
+      source = value.scenarios;
+      sourceVersion = value.version;
+    }
     if (!isRecord(source)) return null;
 
     const scenarios = Object.create(null);
     for (const [name, scenario] of Object.entries(source)) {
       if (!name || !isRecord(scenario)) return null;
-      const clone = cloneScenario(scenario);
+      const clone = cloneScenario(scenario, sourceVersion);
       if (!clone) return null;
       scenarios[name] = clone;
     }
@@ -117,7 +176,7 @@ function readDocument(storage) {
   let text;
   try { text = target.getItem(STORAGE_KEY); }
   catch { return { ok: false, error: 'read-failed' }; }
-  if (text === null) return { ok: true, missing: true, document: { version: 1, scenarios: {} } };
+  if (text === null) return { ok: true, missing: true, document: { version: STORAGE_SCHEMA_VERSION, scenarios: {} } };
   let parsed;
   try { parsed = JSON.parse(text); }
   catch { return { ok: false, error: 'malformed-storage' }; }

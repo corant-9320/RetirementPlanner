@@ -18,9 +18,9 @@ export function firstShortfall(results) {
 }
 
 /**
- * Find the lowest annual drawdown rate (to 0.1%) at which savings never go
- * negative over the projection. Every other parameter, including the drawdown
- * start date, is held fixed.
+ * Find the lowest annual rate (to 0.1%) for one drawdown line at which savings
+ * never go negative over the projection. Every other parameter, including the
+ * line's start date and the other lines' rates, is held fixed.
  *
  * The rates are scanned upwards rather than bisected. A higher rate empties the
  * pension sooner and can push income into higher tax bands, so a higher rate
@@ -29,19 +29,27 @@ export function firstShortfall(results) {
  *
  * @param {object} p - Validated simulation parameters
  * @param {number} startFY - Starting fractional year
+ * @param {number} [index=0] - Index of the line in p.drawdowns to optimise
  * @returns {{ok:true, percent:number, drawdown:number}
  *   | {ok:false, reason:'before-drawdown', shortfallFQ:number}
  *   | {ok:false, reason:'no-effect', shortfallFQ:number}
  *   | {ok:false, reason:'none', bestPercent:number, shortfallFQ:number}}
  */
-export function findMinimumDrawdown(p, startFY) {
-  const run = percent => simulate({ ...p, drawdown: percent / 100 }, startFY);
+export function findMinimumDrawdown(p, startFY, index = 0) {
+  const lines = p.drawdowns || [];
+  const target = lines[index];
+  if (!target) throw new RangeError(`No drawdown line at index ${index}`);
+
+  const run = percent => simulate({
+    ...p,
+    drawdowns: lines.map((line, i) => (i === index ? { ...line, rate: percent / 100 } : { ...line })),
+  }, startFY);
 
   const baseline = firstShortfall(run(0));
   if (baseline === null) return { ok: true, percent: 0, drawdown: 0 };
 
-  // Quarters before drawdown starts are identical at every rate.
-  if (baseline < p.drawdownStartFY) {
+  // Quarters before this line starts are identical at every rate.
+  if (baseline < target.startFY) {
     return { ok: false, reason: 'before-drawdown', shortfallFQ: baseline };
   }
   // With no pot, the rate changes nothing.

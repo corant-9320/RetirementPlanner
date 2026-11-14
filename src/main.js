@@ -18,6 +18,7 @@ import {
   snapshotForm,
 } from './form.js';
 import { renderEvents, addEvent } from './events.js';
+import { renderDrawdowns, addDrawdown, defaultDrawdownLines, drawdownControlId } from './drawdowns.js';
 import { renderResults } from './render.js';
 import { createHistory } from './history.js';
 import {
@@ -30,6 +31,7 @@ import {
 // ── Application state ───────────────────────────
 const state = {
   events: [],
+  drawdowns: defaultDrawdownLines(),
   expandedYears: new Set(),
   lastResults: null,
   lastParams: null,
@@ -38,6 +40,7 @@ const state = {
 
 // ── DOM references ──────────────────────────────
 const eventsListEl = document.getElementById('events-list');
+const drawdownsListEl = document.getElementById('drawdowns-list');
 const saveSelectEl = document.getElementById('save-select');
 const saveNameEl = document.getElementById('save-name');
 const saveStatusEl = document.getElementById('save-status');
@@ -55,7 +58,6 @@ function setStatus(msg, isError, durationMs = 3000) {
 }
 
 const VALIDATION_FIELD_IDS = {
-  drawdownStartFY: 'drawdownYear',
   spUserFY: 'spUserYear',
   spUser2FY: 'spUser2Year',
   spSpouseFY: 'spSpouseYear',
@@ -70,6 +72,13 @@ const VALIDATION_FIELD_IDS = {
   'taxBands.savingsStartBand': 'taxSavingsStartBand',
 };
 
+function controlIdFor(field) {
+  const line = /^drawdowns\[(\d+)\]\.(startFY|rate)$/.exec(field || '');
+  if (line) return drawdownControlId(Number(line[1]), line[2] === 'rate' ? 'rate' : 'year');
+  if (field === 'drawdowns') return 'btn-add-drawdown';
+  return VALIDATION_FIELD_IDS[field] || field;
+}
+
 function showValidationErrors(errors) {
   document.querySelectorAll('[aria-invalid="true"]').forEach(el => el.removeAttribute('aria-invalid'));
   formErrorsEl.replaceChildren();
@@ -81,8 +90,10 @@ function showValidationErrors(errors) {
   const list = document.createElement('ul');
   errors.forEach(error => {
     const item = document.createElement('li');
-    const control = document.getElementById(VALIDATION_FIELD_IDS[error.field] || error.field);
-    const label = control?.labels?.[0]?.textContent.trim() || error.field || 'Simulation';
+    const control = document.getElementById(controlIdFor(error.field));
+    const label = control?.labels?.[0]?.textContent.trim()
+      || control?.getAttribute('aria-label')
+      || error.field || 'Simulation';
     item.textContent = `${label}: ${error.message}`;
     list.appendChild(item);
     if (control) control.setAttribute('aria-invalid', 'true');
@@ -92,7 +103,7 @@ function showValidationErrors(errors) {
 
 function validatedParams() {
   const startFY = currentFractYear();
-  const params = readParams(state.events);
+  const params = readParams(state.events, state.drawdowns);
   const errors = validateParams(params, { startFY });
   showValidationErrors(errors);
   return errors.length ? null : { params, startFY };
@@ -116,14 +127,35 @@ function onEventsMutated() {
   paramHistory.record();
 }
 
+// ── Drawdown lines helper ───────────────────────
+function reRenderDrawdowns() {
+  renderDrawdowns(drawdownsListEl, state.drawdowns, {
+    onChanged: onDrawdownsMutated,
+    onOptimise: optimiseDrawdownLine,
+  });
+}
+
+/** Drawdown lines added/removed: re-render and record an undo step. */
+function onDrawdownsMutated() {
+  reRenderDrawdowns();
+  paramHistory.record();
+}
+
+/** Apply restored list state (from history or a loaded scenario). */
+function applyRestoredLists(restoredEvents, restoredDrawdowns) {
+  state.events = restoredEvents;
+  state.drawdowns = restoredDrawdowns;
+  reRenderEvents();
+  reRenderDrawdowns();
+}
+
+reRenderDrawdowns();
+
 // ── Undo / redo history ─────────────────────────
 const paramHistory = createHistory({
-  capture: () => snapshotForm(state.events),
+  capture: () => snapshotForm(state.events, state.drawdowns),
   apply: snap => {
-    restoreForm(snap, restoredEvents => {
-      state.events = restoredEvents;
-      reRenderEvents();
-    });
+    restoreForm(snap, applyRestoredLists);
     // Keep displayed results in sync once a simulation has been run
     if (state.lastResults) runSimulation();
   },
@@ -144,6 +176,7 @@ redoBtnEl.addEventListener('click', () => {
 });
 
 // Any committed field change, quarter selection, or currency toggle is a step.
+// (#drawdowns-list sits inside #form-grid.)
 document.addEventListener('change', e => {
   if (e.target.closest('#form-grid, #events-list')) paramHistory.record();
 });
@@ -174,6 +207,11 @@ document.getElementById('btn-add-event').addEventListener('click', () => {
   addEvent(state.events, onEventsMutated);
 });
 
+// ── Add drawdown line button ────────────────────
+document.getElementById('btn-add-drawdown').addEventListener('click', () => {
+  addDrawdown(state.drawdowns, onDrawdownsMutated);
+});
+
 // ── Run simulation ──────────────────────────────
 function runSimulation() {
   const validated = validatedParams();
@@ -199,19 +237,23 @@ document.getElementById('btn-run').addEventListener('click', runSimulation);
 // ── Find the lowest drawdown that keeps savings positive ──
 const OPTIMISE_STATUS_MS = 8000;
 
-function drawdownFailureMessage(result) {
+function drawdownFailureMessage(result, n) {
   const when = fmtYQ(result.shortfallFQ);
   switch (result.reason) {
     case 'before-drawdown':
-      return `Savings go negative in ${when}, before drawdown starts, so no drawdown rate can prevent it.`;
+      return `Savings go negative in ${when}, before drawdown line ${n} starts, so no rate on that line can prevent it.`;
     case 'no-effect':
       return `Savings go negative in ${when} and there is no pension pot to draw from.`;
     default:
-      return `No drawdown rate up to 100% keeps savings above zero. The best (${result.bestPercent.toFixed(1)}%) still runs out in ${when}.`;
+      return `No rate up to 100% on drawdown line ${n} keeps savings above zero. The best (${result.bestPercent.toFixed(1)}%) still runs out in ${when}.`;
   }
 }
 
-document.getElementById('btn-optimise-drawdown').addEventListener('click', () => {
+/** "Find lowest" for one line: other lines and every other input stay fixed. */
+function optimiseDrawdownLine(index) {
+  const n = index + 1;
+  // Commit any in-progress edit so the run uses what is on screen.
+  paramHistory.flush();
   const validated = validatedParams();
   if (!validated) {
     setStatus('Drawdown not optimised: check the highlighted inputs.', true);
@@ -219,23 +261,24 @@ document.getElementById('btn-optimise-drawdown').addEventListener('click', () =>
     return;
   }
 
-  const result = findMinimumDrawdown(validated.params, validated.startFY);
+  const result = findMinimumDrawdown(validated.params, validated.startFY, index);
   if (!result.ok) {
-    setStatus(drawdownFailureMessage(result), true, OPTIMISE_STATUS_MS);
+    setStatus(drawdownFailureMessage(result, n), true, OPTIMISE_STATUS_MS);
     return;
   }
 
-  document.getElementById('drawdown').value = result.percent.toFixed(1);
+  state.drawdowns[index].rate = result.percent.toFixed(1);
+  reRenderDrawdowns();
   paramHistory.flush(); // one undoable step
   runSimulation();
   setStatus(
     result.percent === 0
-      ? 'Savings stay above zero with no drawdown, so drawdown is set to 0.0%.'
-      : `Drawdown set to ${result.percent.toFixed(1)}%, the lowest rate that keeps savings above zero.`,
+      ? `Savings stay above zero with no drawdown on line ${n}, so it is set to 0.0%.`
+      : `Drawdown line ${n} set to ${result.percent.toFixed(1)}%, the lowest rate that keeps savings above zero.`,
     false,
     OPTIMISE_STATUS_MS,
   );
-});
+}
 
 // ── Save / Load / Delete ────────────────────────
 document.getElementById('btn-save').addEventListener('click', () => {
@@ -248,7 +291,7 @@ document.getElementById('btn-save').addEventListener('click', () => {
   }
 
   try {
-    const snapshot = snapshotForm(state.events);
+    const snapshot = snapshotForm(state.events, state.drawdowns);
     let result = saveScenario(name, snapshot, { overwrite: false });
     if (result?.exists || result?.error === 'already-exists') {
       if (!confirm(`A scenario named "${name}" already exists. Overwrite it?`)) {
@@ -279,10 +322,7 @@ document.getElementById('btn-load').addEventListener('click', () => {
       return;
     }
     const saved = result.snapshot ?? result.scenario ?? result.data ?? result.value ?? result;
-    restoreForm(saved, restoredEvents => {
-      state.events = restoredEvents;
-      reRenderEvents();
-    });
+    restoreForm(saved, applyRestoredLists);
     saveNameEl.value = name;
     const ran = runSimulation();
     paramHistory.flush(); // loading a scenario is a single undoable step
