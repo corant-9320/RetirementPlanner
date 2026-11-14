@@ -79,11 +79,11 @@ input.plain:focus { outline: none; border-color: #1a6eb5; background: #fff; box-
 
 /* ── Table ── */
 table { border-collapse: collapse; width: 100%; background: #fff; font-size: 12px; border-radius: 4px; overflow: hidden; border: 1px solid #ddd; }
-th { background: #1a3a5c; color: #fff; padding: 8px 10px; text-align: right; font-weight: 600; white-space: nowrap; position: sticky; top: 0; z-index: 1; cursor: grab; user-select: none; }
+th { background: #1a3a5c; color: #fff; padding: 6px 5px; font-size: 11px; text-align: right; vertical-align: bottom; line-height: 1.25; font-weight: 600; white-space: nowrap; position: sticky; top: 0; z-index: 1; cursor: grab; user-select: none; }
 th:first-child { text-align: left; cursor: default; }
 th.drag-over { background: #2a5a8c; outline: 2px dashed #7ab4e8; outline-offset: -2px; }
 th.dragging  { opacity: 0.4; }
-td { padding: 6px 10px; text-align: right; border-bottom: 1px solid #f0f0f0; }
+td { padding: 5px 5px; text-align: right; white-space: nowrap; border-bottom: 1px solid #f0f0f0; }
 td:first-child { text-align: left; }
 tr:hover td { background: #f5f8fc; }
 tr.below td { background: #fffbea; }
@@ -140,5 +140,5 @@ th.year-heading { text-align: left; }
   .event-row .yq-wrap, .event-row > input, .event-row .money-wrap { grid-column: 1; }
   .event-row .btn-del { grid-column: 2; grid-row: 1 / span 3; align-self: stretch; }
   #nw-chart { height: 220px; }
-  td, th { padding: 6px 8px; }
+  td, th { padding: 6px 6px; }
 }

@@ -6,7 +6,7 @@
 import { gbp } from './utils.js';
 import { aggregateAnnual } from './annual.js';
 import { drawChart } from './chart.js';
-import { orderedCols, colCell, saveColOrder } from './columns.js';
+import { orderedCols, colCell, saveColOrder, headerLines } from './columns.js';
 
 function renderWarnings(annualResults) {
   const container = document.getElementById('warnings');
@@ -48,7 +48,8 @@ export function renderResults(state, results, p) {
   cols.forEach(column => {
     const drag = column.draggable ? 'draggable="true"' : '';
     const align = column.key === 'year' ? ' class="year-heading"' : '';
-    html += `<th data-col="${column.key}" ${drag}${align}>${column.label}</th>`;
+    // Labels are static strings from ALL_COLUMNS, so joining with <br> is safe.
+    html += `<th data-col="${column.key}" ${drag}${align}>${headerLines(column.label).join('<br>')}</th>`;
   });
   html += '</tr></thead><tbody>';
 

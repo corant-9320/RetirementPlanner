@@ -111,6 +111,23 @@ export function saveColOrder(order, storage) {
   }
 }
 
+/**
+ * Split a header label into at most two lines, breaking between words where
+ * the longer line is shortest. Single-word labels stay on one line.
+ * @returns {string[]}
+ */
+export function headerLines(label) {
+  const words = String(label).split(/\s+/).filter(Boolean);
+  if (words.length < 2) return [words.join('')];
+  let best = null;
+  for (let i = 1; i < words.length; i++) {
+    const lines = [words.slice(0, i).join(' '), words.slice(i).join(' ')];
+    const longest = Math.max(lines[0].length, lines[1].length);
+    if (!best || longest < best.longest) best = { lines, longest };
+  }
+  return best.lines;
+}
+
 /** Get a complete, valid ordered set of column descriptors. */
 export function orderedCols(colOrder) {
   const byKey = new Map(ALL_COLUMNS.map(column => [column.key, column]));
